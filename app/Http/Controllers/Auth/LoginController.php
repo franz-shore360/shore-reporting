@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
+use App\Enums\WebLoginResult;
+use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +14,10 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    public function __construct(
+        protected AuthService $authService
+    ) {}
+
     /**
      * Show the login form.
      */
@@ -27,36 +33,64 @@ class LoginController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        if (Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
-            $user = Auth::user();
+        $validated = $request->validated();
 
-            if (! $user->isActive()) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
+        $result = $this->authService->attemptWebLogin(
+            $request,
+            $validated['email'],
+            $validated['password'],
+            $request->boolean('remember')
+        );
 
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'message' => __('Your account has been deactivated. Contact an administrator.'),
-                        'code' => 'ACCOUNT_INACTIVE',
-                        'errors' => ['email' => [__('Your account has been deactivated. Contact an administrator.')]],
-                    ], 403);
-                }
+        return match ($result) {
+            WebLoginResult::Success => $this->loginSuccessResponse($request),
+            WebLoginResult::AccountInactive => $this->inactiveAccountResponse($request),
+            WebLoginResult::InvalidCredentials => $this->invalidCredentialsResponse($request),
+        };
+    }
 
-                return back()->withErrors([
-                    'email' => __('Your account has been deactivated. Contact an administrator.'),
-                ])->onlyInput('email');
-            }
+    /**
+     * Log the user out.
+     *
+     * @return RedirectResponse|JsonResponse
+     */
+    public function logout(Request $request)
+    {
+        $this->authService->logoutWeb($request);
 
-            $request->session()->regenerate();
-
-            if ($request->expectsJson()) {
-                return response()->json(['user' => Auth::user()]);
-            }
-
-            return redirect()->intended(route('home'));
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Logged out']);
         }
 
+        return redirect()->route('login');
+    }
+
+    private function loginSuccessResponse(LoginRequest $request): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['user' => Auth::user()]);
+        }
+
+        return redirect()->intended(route('home'));
+    }
+
+    private function inactiveAccountResponse(LoginRequest $request): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => __('Your account has been deactivated. Contact an administrator.'),
+                'code' => 'ACCOUNT_INACTIVE',
+                'errors' => ['email' => [__('Your account has been deactivated. Contact an administrator.')]],
+            ], 403);
+        }
+
+        return back()->withErrors([
+            'email' => __('Your account has been deactivated. Contact an administrator.'),
+        ])->onlyInput('email');
+    }
+
+    private function invalidCredentialsResponse(LoginRequest $request): JsonResponse|RedirectResponse
+    {
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => __('The provided credentials do not match our records.'),
@@ -67,24 +101,5 @@ class LoginController extends Controller
         return back()->withErrors([
             'email' => __('The provided credentials do not match our records.'),
         ])->onlyInput('email');
-    }
-
-    /**
-     * Log the user out.
-     *
-     * @return RedirectResponse|JsonResponse
-     */
-    public function logout(Request $request)
-    {
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Logged out']);
-        }
-
-        return redirect()->route('login');
     }
 }
