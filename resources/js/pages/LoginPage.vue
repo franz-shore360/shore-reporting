@@ -1,0 +1,183 @@
+<template>
+  <div class="login-page">
+    <button
+      type="button"
+      class="theme-toggle-login btn btn-ghost btn-sm"
+      :aria-label="theme === 'dark' ? 'Switch To Light Mode' : 'Switch To Dark Mode'"
+      @click="toggleTheme"
+    >
+      <span v-if="theme === 'dark'" aria-hidden="true">☀️</span>
+      <span v-else aria-hidden="true">🌙</span>
+      <span class="theme-toggle-login-label">{{ theme === 'dark' ? 'Light Mode' : 'Dark Mode' }}</span>
+    </button>
+    <div class="login-card card card--split">
+      <div class="card-header">
+        <h1 class="login-app-title">{{ appName }}</h1>
+      </div>
+      <div class="card-body">
+        <h2 class="login-title">Sign In</h2>
+        <p class="login-subtitle">Enter your credentials to continue</p>
+
+        <form @submit.prevent="submit" class="form">
+          <div v-if="error" class="error">{{ error }}</div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              v-model="form.email"
+              type="email"
+              required
+              autocomplete="email"
+              autofocus
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              v-model="form.password"
+              type="password"
+              required
+              autocomplete="current-password"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div class="form-group checkbox-row">
+            <input id="remember" v-model="form.remember" type="checkbox" class="checkbox" />
+            <label for="remember">Remember Me</label>
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block" :disabled="loading">
+              {{ loading ? 'Signing In…' : 'Sign In' }}
+            </button>
+          </div>
+
+          <p class="login-forgot">
+            <router-link :to="{ name: 'forgot-password' }">Forgot Password?</router-link>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+import { authState } from '../auth';
+import { useTheme } from '../composables/useTheme';
+import { getAppName } from '../composables/useAppName';
+
+const appName = getAppName();
+const { theme, toggleTheme } = useTheme();
+
+const route = useRoute();
+const router = useRouter();
+const loading = ref(false);
+const error = ref('');
+
+onMounted(() => {
+    if (route.query.inactive === '1') {
+        error.value =
+            'Your session has ended because this account was deactivated. Contact an administrator if you need access.';
+    }
+});
+
+const form = reactive({
+  email: '',
+  password: '',
+  remember: false,
+});
+
+async function submit() {
+  error.value = '';
+  loading.value = true;
+  try {
+    const { data } = await axios.post('/login', {
+      email: form.email,
+      password: form.password,
+      remember: form.remember,
+      _token: window.Laravel.csrfToken,
+    });
+    authState.setUser(data.user);
+    router.push({ name: 'home' });
+  } catch (e) {
+    if (e.response?.status === 422 && e.response?.data?.errors) {
+      const errors = e.response.data.errors;
+      error.value = Object.values(errors).flat().join(' ');
+    } else if (e.response?.status === 403 && e.response?.data?.message) {
+      error.value = e.response.data.message;
+    } else {
+      error.value = e.response?.data?.message || 'Invalid email or password.';
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+</script>
+
+<style scoped>
+.login-page {
+  width: 100%;
+  max-width: 24rem;
+  position: relative;
+}
+.theme-toggle-login {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 50;
+}
+.theme-toggle-login-label {
+  margin-left: var(--space-1);
+}
+.login-app-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.login-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.login-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-8);
+  text-align: center;
+}
+.checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-primary);
+}
+.btn-block {
+  width: 100%;
+}
+.login-forgot {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.login-forgot a {
+  color: var(--color-primary);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+}
+.login-forgot a:hover {
+  text-decoration: underline;
+}
+</style>

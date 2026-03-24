@@ -1,0 +1,34 @@
+---
+description: Button labels and titles use Title Case (capitalize each word)
+alwaysApply: true
+---
+
+# UI copy: Title Case for buttons and titles
+
+## Default
+
+Use **Title Case** (capitalize the first letter of each major word) for:
+
+- **Buttons** — e.g. `Save Changes`, `Add User`, `Back To Home`, `Log Out`, `Delete`, `Cancel`
+- **Page titles** — `<h1>`, visible page headings, and browser title segments (e.g. `Users / Shore Reporting`)
+- **Modal / dialog titles** — e.g. `Edit Role`, `Delete Department`
+- **Primary section headings** that act like titles (e.g. card headers)
+
+## Examples
+
+| Avoid | Prefer |
+|-------|--------|
+| Save changes | Save Changes |
+| Add user | Add User |
+| Back to home | Back To Home |
+| Edit profile | Edit Profile |
+
+## Exceptions
+
+- **Short actions** of one word stay capitalized: `Cancel`, `Close`, `Submit`, `Delete`
+- **Acronyms** stay uppercase: `API`, `ID`, `CSV`
+- **Brand / product names** as intended: `Shore Reporting`
+- **Sentence-style** body copy, placeholders, helper text, and long descriptions are **not** required to be Title Case
+- **`aria-label`** and tooltips that are full sentences may use sentence case if clearer
+
+When adding or editing buttons or title-level UI strings in Vue, Blade, or routes meta titles, apply this rule unless an exception applies.

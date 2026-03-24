@@ -1,0 +1,37 @@
+---
+description: Use Laragon PHP 8.2 for Artisan and CLI in this project (Windows)
+alwaysApply: true
+---
+
+# Laragon PHP 8.2 (shore-reporting)
+
+This repo targets **PHP 8.2+**. On Windows, the system `php` may be older (e.g. 8.0). **Always use Laragon’s PHP 8.2** for Artisan and Composer in shell commands.
+
+## Executable (canonical)
+
+```text
+C:\laragon\bin\php\php-8.2.0-Win32-vs16-x64\php.exe
+```
+
+If Laragon’s folder name under `C:\laragon\bin\php\` changes (e.g. you upgrade 8.2), update this path in **`.vscode/settings.json`** and in this rule.
+
+## Running Artisan
+
+Do **not** run plain `php artisan …` unless the terminal’s `PATH` already puts Laragon PHP 8.2 first (workspace terminal usually does via `.vscode/settings.json`).
+
+**Preferred when invoking from the agent (explicit):**
+
+```powershell
+& "C:\laragon\bin\php\php-8.2.0-Win32-vs16-x64\php.exe" artisan migrate
+& "C:\laragon\bin\php\php-8.2.0-Win32-vs16-x64\php.exe" artisan serve
+```
+
+Same pattern for **Composer** if needed:
+
+```powershell
+& "C:\laragon\bin\php\php-8.2.0-Win32-vs16-x64\php.exe" C:\laragon\bin\composer\composer.phar install
+```
+
+## Workspace terminal
+
+`terminal.integrated.env.windows` in **`.vscode/settings.json`** prepends Laragon PHP 8.2 to `PATH` for integrated terminals so `php artisan` works there after reload.
