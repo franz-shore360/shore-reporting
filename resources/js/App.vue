@@ -138,6 +138,16 @@ watch(
   },
 );
 
+watch(
+  () => authState.isAuthenticated,
+  (authenticated) => {
+    if (!authenticated) {
+      accountOpen.value = false;
+      mobileMenuOpen.value = false;
+    }
+  },
+);
+
 function handleClickOutside(event) {
   if (accountDropdownRef.value && !accountDropdownRef.value.contains(event.target)) {
     accountOpen.value = false;
