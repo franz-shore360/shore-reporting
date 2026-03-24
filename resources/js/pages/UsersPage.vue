@@ -368,8 +368,7 @@ async function submitUser() {
         }
         const { data } = await axios.post(`/api/users/${editingUser.value.id}`, formData, {
           headers: {
-            'X-XSRF-TOKEN': window.Laravel?.csrfToken ?? '',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
         });
         updatedUser = data;

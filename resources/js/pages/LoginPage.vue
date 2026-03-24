@@ -103,7 +103,6 @@ async function submit() {
       email: form.email,
       password: form.password,
       remember: form.remember,
-      _token: window.Laravel.csrfToken,
     });
     authState.setUser(data.user);
     router.push({ name: 'home' });

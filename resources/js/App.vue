@@ -147,11 +147,13 @@ function handleClickOutside(event) {
   }
 }
 
-function handleLogout() {
+async function handleLogout() {
   logoutLoading.value = true;
-  axios.post('/logout', { _token: window.Laravel.csrfToken }).finally(() => {
+  try {
+    await axios.post('/logout');
+  } finally {
     logoutLoading.value = false;
-  });
+  }
   authState.clearUser();
   resetDashboardStats();
   router.push({ name: 'login' });

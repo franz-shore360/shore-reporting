@@ -234,7 +234,6 @@ async function submit() {
 
     if (hasFile) {
       const formData = new FormData();
-      formData.append('_token', window.Laravel?.csrfToken ?? '');
       formData.append('_method', 'PATCH');
       formData.append('first_name', form.first_name);
       formData.append('middle_name', form.middle_name || '');
@@ -252,8 +251,7 @@ async function submit() {
       }
       response = await axios.post('/api/profile', formData, {
         headers: {
-          'X-XSRF-TOKEN': window.Laravel?.csrfToken ?? '',
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
     } else {

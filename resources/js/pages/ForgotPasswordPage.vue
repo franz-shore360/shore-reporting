@@ -79,7 +79,6 @@ async function submit() {
   try {
     const { data } = await axios.post('/forgot-password', {
       email: form.email,
-      _token: window.Laravel?.csrfToken ?? '',
     });
     successMessage.value = data.message ?? 'Check your email for the reset link.';
     submitted.value = true;

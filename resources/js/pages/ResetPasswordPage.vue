@@ -114,7 +114,6 @@ async function submit() {
       email: form.email,
       password: form.password,
       password_confirmation: form.password_confirmation,
-      _token: window.Laravel?.csrfToken ?? '',
     });
     successMessage.value = data.message ?? 'Your password has been reset.';
     success.value = true;
