@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\DataTable\DataTableQueryable;
 use App\Models\User;
+use App\Notifications\PasswordChangedNotification;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -181,6 +182,8 @@ class UserService implements DataTableQueryable
             return null;
         }
 
+        $passwordChanging = ! empty($data['password']);
+
         if (! empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
@@ -189,7 +192,29 @@ class UserService implements DataTableQueryable
 
         $this->userRepository->update($user, $data);
 
-        return $user->fresh();
+        $fresh = $user->fresh();
+
+        if ($passwordChanging && $fresh !== null) {
+            $this->notifyPasswordChanged($fresh);
+        }
+
+        return $fresh;
+    }
+
+    /**
+     * Send the password-changed email (best-effort; failures are reported, not thrown).
+     */
+    public function notifyPasswordChanged(User $user): void
+    {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
+        try {
+            $user->notify(new PasswordChangedNotification);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\UserService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,10 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class ResetPasswordController extends Controller
 {
+    public function __construct(
+        protected UserService $userService
+    ) {}
+
     /**
      * Reset the user's password (JSON for SPA).
      */
@@ -34,6 +39,8 @@ class ResetPasswordController extends Controller
                 ])->save();
 
                 event(new PasswordReset($user));
+
+                $this->userService->notifyPasswordChanged($user->fresh());
             }
         );
 
