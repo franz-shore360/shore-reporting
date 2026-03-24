@@ -94,27 +94,19 @@
       </div>
     </div>
 
-    <!-- Delete confirmation -->
-    <div v-if="roleToDelete" class="modal-backdrop" @click.self="roleToDelete = null">
-      <div class="modal modal--delete modal-sm">
-        <div class="modal-header">
-          <h2 class="modal-title">Delete Role</h2>
-          <button type="button" class="modal-close" aria-label="Close" @click="roleToDelete = null">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p v-if="!deleteError">
-            Are you sure you want to delete <strong>{{ roleToDelete.name }}</strong>? This cannot be undone.
-          </p>
-          <p v-else class="form-error">{{ deleteError }}</p>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" @click="roleToDelete = null">Cancel</button>
-          <button type="button" class="btn btn-danger" :disabled="deleteLoading" @click="deleteRole">
-            {{ deleteLoading ? 'Deleting…' : 'Delete' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      v-model:open="roleDeleteModalOpen"
+      title="Delete Role"
+      :confirm-label="deleteLoading ? 'Deleting…' : 'Delete'"
+      variant="danger"
+      :loading="deleteLoading"
+      @confirm="deleteRole"
+    >
+      <p v-if="!deleteError">
+        Are you sure you want to delete <strong>{{ roleToDelete?.name }}</strong>? This cannot be undone.
+      </p>
+      <p v-else class="form-error">{{ deleteError }}</p>
+    </ConfirmModal>
 
     <SuccessToast ref="successToastRef" />
   </div>
@@ -125,6 +117,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { authState } from '../auth';
 import DataTable from '../components/DataTable.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
 import GridIcon from '../components/icons/GridIcons.vue';
 import SuccessToast from '../components/SuccessToast.vue';
 import { formatTableCellValue } from '../utils/date';
@@ -143,6 +136,16 @@ const deleteLoading = ref(false);
 const formError = ref('');
 const deleteError = ref('');
 const successToastRef = ref(null);
+
+const roleDeleteModalOpen = computed({
+  get: () => roleToDelete.value != null,
+  set(isOpen) {
+    if (!isOpen && !deleteLoading.value) {
+      roleToDelete.value = null;
+      deleteError.value = '';
+    }
+  },
+});
 
 const form = reactive({
   name: '',

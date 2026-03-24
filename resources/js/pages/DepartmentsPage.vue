@@ -56,27 +56,19 @@
       </div>
     </div>
 
-    <!-- Delete confirmation -->
-    <div v-if="departmentToDelete" class="modal-backdrop" @click.self="departmentToDelete = null">
-      <div class="modal modal--delete modal-sm">
-        <div class="modal-header">
-          <h2 class="modal-title">Delete Department</h2>
-          <button type="button" class="modal-close" aria-label="Close" @click="departmentToDelete = null">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p v-if="!deleteError">
-            Are you sure you want to delete <strong>{{ departmentToDelete.name }}</strong>? This cannot be undone.
-          </p>
-          <p v-else class="form-error">{{ deleteError }}</p>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" @click="departmentToDelete = null">Cancel</button>
-          <button type="button" class="btn btn-danger" :disabled="deleteLoading" @click="deleteDepartment">
-            {{ deleteLoading ? 'Deleting…' : 'Delete' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      v-model:open="departmentDeleteModalOpen"
+      title="Delete Department"
+      :confirm-label="deleteLoading ? 'Deleting…' : 'Delete'"
+      variant="danger"
+      :loading="deleteLoading"
+      @confirm="deleteDepartment"
+    >
+      <p v-if="!deleteError">
+        Are you sure you want to delete <strong>{{ departmentToDelete?.name }}</strong>? This cannot be undone.
+      </p>
+      <p v-else class="form-error">{{ deleteError }}</p>
+    </ConfirmModal>
 
     <SuccessToast ref="successToastRef" />
   </div>
@@ -87,6 +79,7 @@ import { ref, reactive, computed } from 'vue';
 import axios from 'axios';
 import { authState } from '../auth';
 import DepartmentsTable from '../components/DepartmentsTable.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
 import SuccessToast from '../components/SuccessToast.vue';
 
 const departmentsTableRef = ref(null);
@@ -114,6 +107,16 @@ const canViewList = computed(() => permissionNames.value.includes('department-li
 const canCreate = computed(() => permissionNames.value.includes('department-create'));
 const canEdit = computed(() => permissionNames.value.includes('department-edit'));
 const canDelete = computed(() => permissionNames.value.includes('department-delete'));
+
+const departmentDeleteModalOpen = computed({
+  get: () => departmentToDelete.value != null,
+  set(isOpen) {
+    if (!isOpen && !deleteLoading.value) {
+      departmentToDelete.value = null;
+      deleteError.value = '';
+    }
+  },
+});
 
 function resetForm() {
   form.name = '';

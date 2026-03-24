@@ -72,6 +72,19 @@
     </template>
     <template #empty>{{ emptyMessage }}</template>
   </DataTable>
+
+  <ConfirmModal
+    v-model:open="bulkDeleteModalOpen"
+    title="Delete Users"
+    :confirm-label="bulkDeleteLoading ? 'Deleting…' : 'Delete Users'"
+    variant="danger"
+    :loading="bulkDeleteLoading"
+    @confirm="executeBulkDelete"
+  >
+    <p>
+      You are about to delete <strong>{{ bulkDeletePendingCount }} user(s)</strong>. This cannot be undone.
+    </p>
+  </ConfirmModal>
 </template>
 
 <script setup>
@@ -79,6 +92,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import { authState } from '../auth';
 import DataTable from './DataTable.vue';
+import ConfirmModal from './ConfirmModal.vue';
 import GridIcon from './icons/GridIcons.vue';
 import { formatTableCellValue } from '../utils/date';
 
@@ -110,6 +124,23 @@ const emit = defineEmits(['edit', 'delete-request', 'notify']);
 
 const dataTableRef = ref(null);
 
+/** Pending bulk-delete ids when confirmation modal is open. */
+const bulkDeleteIds = ref(null);
+const bulkDeleteLoading = ref(false);
+
+const bulkDeleteModalOpen = computed({
+  get: () => Array.isArray(bulkDeleteIds.value) && bulkDeleteIds.value.length > 0,
+  set(isOpen) {
+    if (!isOpen && !bulkDeleteLoading.value) {
+      bulkDeleteIds.value = null;
+    }
+  },
+});
+
+const bulkDeletePendingCount = computed(() =>
+  Array.isArray(bulkDeleteIds.value) ? bulkDeleteIds.value.length : 0,
+);
+
 const bulkActions = computed(() => {
   const actions = [];
   if (props.canDelete) {
@@ -128,36 +159,44 @@ async function onBulkAction({ action, ids }) {
 
   switch (action) {
     case 'delete': {
-      if (!props.canDelete) return;
-      const n = ids.length;
-      if (!window.confirm(`Delete ${n} user(s)? This cannot be undone.`)) return;
-      try {
-        const { data } = await axios.post('/api/users/bulk-destroy', {
-          ids: ids.map((id) => Number(id)),
-        });
-        dataTableRef.value?.clearRowSelection();
-        await fetchUsers();
-        const parts = [`${data.deleted ?? 0} user(s) deleted.`];
-        if (data.skipped_self) {
-          parts.push('Your own account was not included.');
-        }
-        if ((data.skipped_missing ?? 0) > 0) {
-          parts.push(`${data.skipped_missing} could not be removed.`);
-        }
-        emit('notify', { text: parts.join(' ') });
-      } catch (e) {
-        const msg = e.response?.data?.message ?? 'Bulk delete failed.';
-        if (e.response?.status === 422 && e.response?.data?.errors) {
-          const err = e.response.data.errors;
-          emit('notify', { text: Object.values(err).flat().join(' ') || msg });
-        } else {
-          emit('notify', { text: msg });
-        }
-      }
+      if (!props.canDelete || !ids?.length) return;
+      bulkDeleteIds.value = [...ids.map(String)];
       break;
     }
     default:
       break;
+  }
+}
+
+async function executeBulkDelete() {
+  const ids = bulkDeleteIds.value;
+  if (!ids?.length || !props.canDelete) return;
+  bulkDeleteLoading.value = true;
+  try {
+    const { data } = await axios.post('/api/users/bulk-destroy', {
+      ids: ids.map((id) => Number(id)),
+    });
+    bulkDeleteIds.value = null;
+    dataTableRef.value?.clearRowSelection();
+    await fetchUsers();
+    const parts = [`${data.deleted ?? 0} user(s) deleted.`];
+    if (data.skipped_self) {
+      parts.push('Your own account was not included.');
+    }
+    if ((data.skipped_missing ?? 0) > 0) {
+      parts.push(`${data.skipped_missing} could not be removed.`);
+    }
+    emit('notify', { text: parts.join(' ') });
+  } catch (e) {
+    const msg = e.response?.data?.message ?? 'Bulk delete failed.';
+    if (e.response?.status === 422 && e.response?.data?.errors) {
+      const err = e.response.data.errors;
+      emit('notify', { text: Object.values(err).flat().join(' ') || msg });
+    } else {
+      emit('notify', { text: msg });
+    }
+  } finally {
+    bulkDeleteLoading.value = false;
   }
 }
 

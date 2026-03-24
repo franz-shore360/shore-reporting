@@ -166,25 +166,20 @@
       </div>
     </div>
 
-    <!-- Delete confirmation -->
-    <div v-if="userToDelete" class="modal-backdrop" @click.self="userToDelete = null">
-      <div class="modal modal--delete modal-sm">
-        <div class="modal-header">
-          <h2 class="modal-title">Delete User</h2>
-          <button type="button" class="modal-close" aria-label="Close" @click="userToDelete = null">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p v-if="!deleteError">Are you sure you want to delete <strong>{{ userToDelete.full_name }}</strong> ({{ userToDelete.email }})? This cannot be undone.</p>
-          <p v-else class="form-error">{{ deleteError }}</p>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" @click="userToDelete = null">Cancel</button>
-          <button type="button" class="btn btn-danger" :disabled="deleteLoading" @click="deleteUser">
-            {{ deleteLoading ? 'Deleting…' : 'Delete' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      v-model:open="userDeleteModalOpen"
+      title="Delete User"
+      :confirm-label="deleteLoading ? 'Deleting…' : 'Delete'"
+      variant="danger"
+      :loading="deleteLoading"
+      @confirm="deleteUser"
+    >
+      <p v-if="!deleteError">
+        Are you sure you want to delete <strong>{{ userToDelete?.full_name }}</strong> ({{ userToDelete?.email }})? This
+        cannot be undone.
+      </p>
+      <p v-else class="form-error">{{ deleteError }}</p>
+    </ConfirmModal>
 
     <SuccessToast ref="successToastRef" />
   </div>
@@ -195,6 +190,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { authState } from '../auth';
 import UsersTable from '../components/UsersTable.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
 import SuccessToast from '../components/SuccessToast.vue';
 
 const usersTableRef = ref(null);
@@ -237,6 +233,16 @@ const canViewList = computed(() => permissionNames.value.includes('user-list'));
 const canCreate = computed(() => permissionNames.value.includes('user-create'));
 const canEdit = computed(() => permissionNames.value.includes('user-edit'));
 const canDelete = computed(() => permissionNames.value.includes('user-delete'));
+
+const userDeleteModalOpen = computed({
+  get: () => userToDelete.value != null,
+  set(isOpen) {
+    if (!isOpen && !deleteLoading.value) {
+      userToDelete.value = null;
+      deleteError.value = '';
+    }
+  },
+});
 
 const ADMIN_ROLE_NAME = 'Admin';
 const isAuthAdmin = computed(() => authState.user?.role_names?.includes(ADMIN_ROLE_NAME) ?? false);
