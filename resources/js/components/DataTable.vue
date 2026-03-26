@@ -149,7 +149,8 @@
     </div>
 
     <div class="data-table-wrapper">
-      <table ref="tableRef" class="data-table">
+      <div class="data-table-x-scroll">
+        <table ref="tableRef" class="data-table">
         <thead>
           <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
             <th v-if="rowSelectionEnabled" class="data-table-th data-table-th-select" scope="col">
@@ -279,7 +280,8 @@
             </td>
           </tr>
         </tbody>
-      </table>
+        </table>
+      </div>
       <p v-if="data.length === 0" class="data-table-empty">
         <slot name="empty">No data</slot>
       </p>

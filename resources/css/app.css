@@ -491,13 +491,24 @@ select {
   margin-bottom: var(--space-4);
 }
 
-/* Data table - shared — vertical scroll is the page body; table has no inner vertical scrollbar.
-   Do NOT use overflow-x: auto here: paired with overflow-y: visible, browsers compute overflow-y as auto,
-   which makes this box the sticky scrollport and breaks thead sticky + alignment vs the page. */
+/* Data table — vertical scroll is the page body. Wide tables scroll inside .data-table-x-scroll.
+   overflow-y: clip (not visible) with overflow-x: auto avoids paired-axis visible→auto stealing
+   vertical scroll from the viewport. Viewport sticky thead cannot work inside that scrollport,
+   so thead is reset to static inside .data-table-x-scroll (see below). */
 .data-table-wrapper {
   overflow: visible;
   max-height: none;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--color-border-light);
+}
+
+.data-table-x-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: clip;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table-root {
@@ -505,10 +516,13 @@ select {
   --data-table-controls-offset: 0px;
   /* First header row height for filter-row sticky offset */
   --data-table-header-row-1-height: 3.25rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .data-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
   font-size: var(--text-sm);
@@ -547,7 +561,7 @@ select {
   background: var(--color-surface-hover);
 }
 
-/* Sticky thead while scrolling the document — top clears fixed app chrome + toolbar/pagination block */
+/* Sticky thead — overridden below when inside .data-table-x-scroll (scrollport breaks viewport sticky) */
 .data-table thead tr:first-child .data-table-th {
   position: sticky;
   top: calc(var(--app-sticky-top, 0px) + var(--data-table-controls-offset, 0px));
@@ -557,8 +571,22 @@ select {
   box-shadow: 0 1px 0 var(--color-border-light);
 }
 
+.data-table-x-scroll .data-table thead tr:first-child .data-table-th {
+  position: static;
+  top: auto;
+  z-index: auto;
+  background-clip: border-box;
+  box-shadow: none;
+}
+
 /* No seam between title row and filter row when both are sticky */
 .data-table thead:has(.data-table-filter-row) tr:first-child .data-table-th {
+  border-bottom: none;
+  box-shadow: none;
+  padding-bottom: var(--space-1);
+}
+
+.data-table-x-scroll .data-table thead:has(.data-table-filter-row) tr:first-child .data-table-th {
   border-bottom: none;
   box-shadow: none;
   padding-bottom: var(--space-1);
@@ -573,6 +601,14 @@ select {
   background: var(--color-surface-hover);
   background-clip: padding-box;
   box-shadow: 0 1px 0 var(--color-border-light);
+}
+
+.data-table-x-scroll .data-table thead tr.data-table-filter-row .data-table-th {
+  position: static;
+  top: auto;
+  z-index: auto;
+  background-clip: border-box;
+  box-shadow: none;
 }
 
 .data-table-th-sort {
