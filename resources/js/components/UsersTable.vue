@@ -1,7 +1,7 @@
 <template>
   <DataTable
     ref="dataTableRef"
-    :key="'users-' + roles.length"
+    :key="'users-' + roles.length + '-' + departments.length"
     storage-key="users"
     :columns="userColumns"
     :data="users"
@@ -111,6 +111,11 @@ const props = defineProps({
   },
   /** Role list for Role column filter options (same source as user form). */
   roles: {
+    type: Array,
+    default: () => [],
+  },
+  /** Department list for Department column filter dropdown (`/api/departments/options` shape). */
+  departments: {
     type: Array,
     default: () => [],
   },
@@ -268,6 +273,14 @@ const userColumns = computed(() => {
       enableColumnFilter: true,
       filterFn: 'includesString',
       enableSorting: true,
+      filterOptions: [
+        { value: '', label: 'All' },
+        ...props.departments
+          .filter((d) => d && d.name != null && String(d.name).trim() !== '')
+          .slice()
+          .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: 'base' }))
+          .map((d) => ({ value: String(d.name), label: String(d.name) })),
+      ],
     },
     {
       accessorKey: 'created_at',

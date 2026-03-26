@@ -20,6 +20,7 @@
         :can-edit="canEdit"
         :can-delete="canDelete"
         :roles="roles"
+        :departments="departments"
         @edit="openEditModal"
         @delete-request="confirmDelete"
         @notify="onUsersTableNotify"
