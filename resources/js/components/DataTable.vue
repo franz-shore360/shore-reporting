@@ -1401,7 +1401,6 @@ watch(
   background: var(--color-bg-elevated);
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-1);
-  border-bottom: 1px solid var(--color-border-light);
 }
 
 .data-table-sticky-controls .data-table-pagination--top {
