@@ -1,6 +1,14 @@
 <template>
-  <div ref="rootRef" class="data-table-root">
-    <div ref="stickyControlsRef" class="data-table-sticky-controls">
+  <div
+    ref="rootRef"
+    class="data-table-root"
+    :class="{ 'data-table-root--sticky-header': stickyHeader }"
+  >
+    <div
+      v-if="showStickyControls"
+      ref="stickyControlsRef"
+      class="data-table-sticky-controls"
+    >
       <div
         v-if="showBulkActionBar"
         class="data-table-bulk-actions"
@@ -399,6 +407,11 @@ const props = defineProps({
   isRowSelectable: {
     type: Function,
     default: null,
+  },
+  /** Sticky table header row (and toolbar/pagination bar) while scrolling the page. Off by default for compact grids. */
+  stickyHeader: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -1091,6 +1104,11 @@ const showReset = computed(
 
 const showToolbar = computed(() => showPicker.value || showReset.value);
 
+/** Toolbar, server pagination, or bulk bar — hide the whole sticky chrome when none apply. */
+const showStickyControls = computed(
+  () => showBulkActionBar.value || showToolbar.value || props.serverSide,
+);
+
 const rangeFrom = computed(() => {
   if (!props.serverSide || !props.total) return 0;
   return props.pagination.pageIndex * props.pagination.pageSize + 1;
@@ -1164,16 +1182,24 @@ let theadResizeObserver = null;
  * drives thead sticky `top` against document scroll (wrapper must not be overflow:auto).
  */
 function syncStickyTableOffsets() {
+  const root = rootRef.value;
+  if (!root) {
+    return;
+  }
+  if (!props.stickyHeader) {
+    root.style.setProperty('--data-table-controls-offset', '0px');
+    return;
+  }
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      const root = rootRef.value;
       const stack = stickyControlsRef.value;
       const table = tableRef.value;
-      if (!root) {
+      const r = rootRef.value;
+      if (!r) {
         return;
       }
       const controlsH = stack ? Math.round(stack.offsetHeight) : 0;
-      root.style.setProperty('--data-table-controls-offset', `${controlsH}px`);
+      r.style.setProperty('--data-table-controls-offset', `${controlsH}px`);
 
       const thead = table?.querySelector('thead');
       if (thead) {
@@ -1189,7 +1215,7 @@ function syncStickyTableOffsets() {
           }
         }
         if (headerStackPx > 0) {
-          root.style.setProperty('--data-table-header-row-1-height', `${headerStackPx}px`);
+          r.style.setProperty('--data-table-header-row-1-height', `${headerStackPx}px`);
         }
       }
     });
@@ -1307,28 +1333,81 @@ function onDocClick(e) {
   }
 }
 
+function disconnectStickyControlsResizeObserver() {
+  stickyControlsResizeObserver?.disconnect();
+  stickyControlsResizeObserver = null;
+}
+
+function connectStickyControlsResizeObserver() {
+  disconnectStickyControlsResizeObserver();
+  nextTick(() => {
+    if (typeof ResizeObserver === 'undefined' || !stickyControlsRef.value) {
+      return;
+    }
+    stickyControlsResizeObserver = new ResizeObserver(() => syncStickyTableOffsets());
+    stickyControlsResizeObserver.observe(stickyControlsRef.value);
+  });
+}
+
+function disconnectTheadResizeObserver() {
+  theadResizeObserver?.disconnect();
+  theadResizeObserver = null;
+}
+
+function connectTheadResizeObserver() {
+  disconnectTheadResizeObserver();
+  if (!props.stickyHeader || typeof ResizeObserver === 'undefined') {
+    return;
+  }
+  const thead = tableRef.value?.querySelector('thead');
+  if (!thead) {
+    return;
+  }
+  theadResizeObserver = new ResizeObserver(() => syncStickyTableOffsets());
+  theadResizeObserver.observe(thead);
+}
+
+watch(
+  [showStickyControls, () => props.stickyHeader],
+  ([visible, sticky]) => {
+    if (visible && sticky) {
+      connectStickyControlsResizeObserver();
+    } else {
+      disconnectStickyControlsResizeObserver();
+    }
+    nextTick(() => syncStickyTableOffsets());
+  },
+);
+
 onMounted(() => {
   document.addEventListener('click', onDocClick);
   nextTick(() => {
     syncStickyTableOffsets();
-    if (typeof ResizeObserver !== 'undefined' && stickyControlsRef.value) {
-      stickyControlsResizeObserver = new ResizeObserver(() => syncStickyTableOffsets());
-      stickyControlsResizeObserver.observe(stickyControlsRef.value);
+    if (showStickyControls.value && props.stickyHeader) {
+      connectStickyControlsResizeObserver();
     }
-    const thead = tableRef.value?.querySelector('thead');
-    if (typeof ResizeObserver !== 'undefined' && thead) {
-      theadResizeObserver = new ResizeObserver(() => syncStickyTableOffsets());
-      theadResizeObserver.observe(thead);
-    }
+    connectTheadResizeObserver();
   });
 });
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick);
-  stickyControlsResizeObserver?.disconnect();
-  stickyControlsResizeObserver = null;
-  theadResizeObserver?.disconnect();
-  theadResizeObserver = null;
+  disconnectStickyControlsResizeObserver();
+  disconnectTheadResizeObserver();
 });
+
+watch(
+  () => props.stickyHeader,
+  () => {
+    nextTick(() => {
+      if (props.stickyHeader) {
+        connectTheadResizeObserver();
+      } else {
+        disconnectTheadResizeObserver();
+      }
+      syncStickyTableOffsets();
+    });
+  },
+);
 
 function activeColumnFilters() {
   return props.serverSide ? serverColumnFilters() : clientColumnFilters.value;
@@ -1377,6 +1456,7 @@ watch(
     () => props.loading,
     () => showBulkActionBar.value,
     () => selectedRowIds.value.length,
+    () => props.stickyHeader,
   ],
   () => nextTick(() => syncStickyTableOffsets()),
 );
@@ -1393,15 +1473,18 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  position: sticky;
-  top: var(--app-sticky-top, 0px);
-  z-index: 30;
   width: 100%;
   box-sizing: border-box;
   background: var(--color-bg-elevated);
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-1);
   border-bottom: 1px solid var(--color-border-light);
+}
+
+.data-table-root--sticky-header .data-table-sticky-controls {
+  position: sticky;
+  top: var(--app-sticky-top, 0px);
+  z-index: 30;
 }
 
 .data-table-sticky-controls .data-table-pagination--top {

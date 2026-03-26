@@ -1,5 +1,6 @@
 <template>
   <DataTable
+    sticky-header
     storage-key="departments"
     :columns="departmentColumns"
     :data="departments"

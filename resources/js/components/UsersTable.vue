@@ -2,6 +2,7 @@
   <DataTable
     ref="dataTableRef"
     :key="'users-' + roles.length"
+    sticky-header
     storage-key="users"
     :columns="userColumns"
     :data="users"
