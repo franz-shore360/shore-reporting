@@ -222,7 +222,13 @@ const userColumns = computed(() => {
       enableSorting: true,
       sortingFn: 'basic',
     },
-    { accessorKey: 'full_name', header: 'Name', enableSorting: true },
+    {
+      accessorKey: 'full_name',
+      header: 'Name',
+      enableColumnFilter: true,
+      filterFn: 'includesString',
+      enableSorting: true,
+    },
     {
       id: 'role_names',
       accessorFn: (row) => (row.roles && row.roles.length ? row.roles.map((r) => r.name).join(', ') : '—'),

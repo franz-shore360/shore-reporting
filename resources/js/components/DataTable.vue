@@ -32,6 +32,15 @@
 
       <div v-if="showToolbar" class="data-table-toolbar">
       <button
+        v-if="showApplyFilters"
+        type="button"
+        class="btn btn-sm btn-primary"
+        aria-label="Apply column filters"
+        @click="commitTextFilters"
+      >
+        Apply Filters
+      </button>
+      <button
         v-if="showReset"
         type="button"
         class="btn btn-sm btn-secondary"
@@ -229,8 +238,8 @@
                 <select
                   v-if="getFilterOptions(header.column.columnDef).length"
                   class="data-table-filter-select"
-                  :value="getColumnFilterValue(header.column.id)"
-                  @change="setColumnFilter(header.column.id, $event.target.value)"
+                  :value="getSelectFilterDraft(header.column.id)"
+                  @change="setSelectFilterDraft(header.column.id, $event.target.value)"
                 >
                   <option
                     v-for="opt in getFilterOptions(header.column.columnDef)"
@@ -244,9 +253,10 @@
                   v-else
                   type="text"
                   class="data-table-filter-input"
-                  :value="getColumnFilterValue(header.column.id)"
+                  :value="getTextFilterDraft(header.column.id)"
                   :placeholder="'Filter ' + (header.column.columnDef.header || '')"
-                  @input="setColumnFilter(header.column.id, $event.target.value)"
+                  @input="setTextFilterDraft(header.column.id, $event.target.value)"
+                  @keydown.enter.prevent="commitTextFilters"
                 />
               </template>
             </th>
@@ -290,7 +300,7 @@
 </template>
 
 <script setup>
-import { toRef, ref, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue';
+import { toRef, ref, reactive, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue';
 import {
   useVueTable,
   getCoreRowModel,
@@ -417,6 +427,13 @@ const columnDefs = computed(() => (Array.isArray(props.columns) ? props.columns 
 
 /** Client-only filters; server mode uses props.columnFilters. */
 const clientColumnFilters = ref([]);
+/** Draft values for text column filters; applied via Apply Filters or Enter in the filter row. */
+const textFilterDrafts = reactive({});
+/** Last applied text per column id — refresh drafts only when applied filter state changes externally. */
+const lastAppliedTextFilterValues = ref({});
+/** Draft values for select column filters; applied via Apply Filters only. */
+const selectFilterDrafts = reactive({});
+const lastAppliedSelectFilterValues = ref({});
 /** One-time load from localStorage per storageKey (client grids). */
 const columnFiltersClientLoadedFromStorage = ref(false);
 /** One-time hydrate from localStorage per storageKey (server grids). */
@@ -1073,6 +1090,33 @@ const hasFilterableColumns = computed(() =>
   columnDefs.value.some((col) => col.enableColumnFilter === true),
 );
 
+function columnDefHasFilterSelect(def) {
+  const opts = def?.filterOptions;
+  return Array.isArray(opts) && opts.length > 0;
+}
+
+const textFilterColumnIds = computed(() =>
+  columnDefs.value
+    .filter((c) => c.enableColumnFilter === true && !columnDefHasFilterSelect(c))
+    .map((c) => (c.id != null ? String(c.id) : c.accessorKey != null ? String(c.accessorKey) : null))
+    .filter(Boolean),
+);
+
+const hasTextColumnFilters = computed(() => textFilterColumnIds.value.length > 0);
+
+const selectFilterColumnIds = computed(() =>
+  columnDefs.value
+    .filter((c) => c.enableColumnFilter === true && columnDefHasFilterSelect(c))
+    .map((c) => (c.id != null ? String(c.id) : c.accessorKey != null ? String(c.accessorKey) : null))
+    .filter(Boolean),
+);
+
+const hasSelectColumnFilters = computed(() => selectFilterColumnIds.value.length > 0);
+
+const showApplyFilters = computed(
+  () => props.filterable && (hasTextColumnFilters.value || hasSelectColumnFilters.value),
+);
+
 const filterRowHeaders = computed(() => {
   const groups = table.getHeaderGroups();
   return (groups[0] && groups[0].headers) || [];
@@ -1091,7 +1135,59 @@ const showReset = computed(
   () => props.showResetButton && (props.sortable || props.filterable),
 );
 
-const showToolbar = computed(() => showPicker.value || showReset.value);
+const showToolbar = computed(
+  () => showPicker.value || showReset.value || showApplyFilters.value,
+);
+
+watch(
+  [
+    textFilterColumnIds,
+    selectFilterColumnIds,
+    () => (props.serverSide ? props.columnFilters : clientColumnFilters.value),
+  ],
+  () => {
+    if (!props.filterable) return;
+    const applied = props.serverSide ? serverColumnFilters() : clientColumnFilters.value;
+    const arr = Array.isArray(applied) ? applied : [];
+
+    const textIds = textFilterColumnIds.value;
+    const prevT = { ...lastAppliedTextFilterValues.value };
+    const nextSnapT = {};
+    for (const id of textIds) {
+      const e = arr.find((f) => String(f.id) === id);
+      const appliedVal = e?.value != null ? String(e.value) : '';
+      nextSnapT[id] = appliedVal;
+      if (prevT[id] !== appliedVal) {
+        textFilterDrafts[id] = appliedVal;
+      }
+    }
+    for (const k of Object.keys(prevT)) {
+      if (!textIds.includes(k)) {
+        delete textFilterDrafts[k];
+      }
+    }
+    lastAppliedTextFilterValues.value = nextSnapT;
+
+    const selIds = selectFilterColumnIds.value;
+    const prevS = { ...lastAppliedSelectFilterValues.value };
+    const nextSnapS = {};
+    for (const id of selIds) {
+      const e = arr.find((f) => String(f.id) === id);
+      const appliedVal = e?.value != null ? String(e.value) : '';
+      nextSnapS[id] = appliedVal;
+      if (prevS[id] !== appliedVal) {
+        selectFilterDrafts[id] = appliedVal;
+      }
+    }
+    for (const k of Object.keys(prevS)) {
+      if (!selIds.includes(k)) {
+        delete selectFilterDrafts[k];
+      }
+    }
+    lastAppliedSelectFilterValues.value = nextSnapS;
+  },
+  { deep: true, immediate: true },
+);
 
 const rangeFrom = computed(() => {
   if (!props.serverSide || !props.total) return 0;
@@ -1334,6 +1430,54 @@ onUnmounted(() => {
 
 function activeColumnFilters() {
   return props.serverSide ? serverColumnFilters() : clientColumnFilters.value;
+}
+
+function getTextFilterDraft(columnId) {
+  const id = String(columnId);
+  const v = textFilterDrafts[id];
+  return v !== undefined && v !== null ? String(v) : '';
+}
+
+function setTextFilterDraft(columnId, value) {
+  textFilterDrafts[String(columnId)] = value;
+}
+
+function getSelectFilterDraft(columnId) {
+  const id = String(columnId);
+  const v = selectFilterDrafts[id];
+  return v !== undefined && v !== null ? String(v) : '';
+}
+
+function setSelectFilterDraft(columnId, value) {
+  selectFilterDrafts[String(columnId)] = value;
+}
+
+function commitTextFilters() {
+  if (!props.filterable) return;
+  if (!textFilterColumnIds.value.length && !selectFilterColumnIds.value.length) return;
+
+  const next = [];
+  for (const id of selectFilterColumnIds.value) {
+    const v = String(selectFilterDrafts[id] ?? '').trim();
+    if (v !== '') {
+      next.push({ id, value: v });
+    }
+  }
+  for (const id of textFilterColumnIds.value) {
+    const v = String(textFilterDrafts[id] ?? '').trim();
+    if (v !== '') {
+      next.push({ id, value: v });
+    }
+  }
+  if (props.serverSide) {
+    emit('update:columnFilters', next);
+    const pageSize = Number(props.pagination?.pageSize) || 25;
+    if ((props.pagination?.pageIndex ?? 0) !== 0) {
+      emit('update:pagination', { ...(props.pagination || {}), pageIndex: 0, pageSize });
+    }
+  } else {
+    clientColumnFilters.value = next;
+  }
 }
 
 function getColumnFilterValue(columnId) {
