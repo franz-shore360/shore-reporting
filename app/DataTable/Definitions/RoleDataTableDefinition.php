@@ -31,4 +31,12 @@ final class RoleDataTableDefinition implements DataTableDefinition
     {
         return 'desc';
     }
+
+    public function exportColumns(): array
+    {
+        return [
+            'id' => 'ID',
+            'name' => 'Name',
+        ];
+    }
 }

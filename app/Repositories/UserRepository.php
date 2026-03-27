@@ -7,12 +7,10 @@ use App\Repositories\Interfaces\UserRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\LazyCollection;
 
 class UserRepository implements UserRepositoryInterface
 {
-    /**
-     * @var User
-     */
     protected User $model;
 
     public function __construct(User $model)
@@ -38,11 +36,40 @@ class UserRepository implements UserRepositoryInterface
         string $direction,
         array $filters = [],
     ): LengthAwarePaginator {
-        $dir = $direction === 'desc' ? 'desc' : 'asc';
+        $query = $this->newDataTableQuery($filters);
+        $this->applyDataTableOrder($query, $sort, $direction);
 
+        return $query->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function cursorForDataTableExport(string $sort, string $direction, array $filters = []): LazyCollection
+    {
+        $query = $this->newDataTableQuery($filters);
+        $this->applyDataTableOrder($query, $sort, $direction);
+
+        return $query->cursor();
+    }
+
+    /**
+     * @param  Builder<User>  $query
+     */
+    protected function newDataTableQuery(array $filters): Builder
+    {
         $query = $this->model->newQuery()->with(['department', 'roles']);
-
         $this->applyUserFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * @param  Builder<User>  $query
+     */
+    protected function applyDataTableOrder(Builder $query, string $sort, string $direction): void
+    {
+        $dir = $direction === 'desc' ? 'desc' : 'asc';
 
         $allowedSorts = [
             'id', 'full_name', 'email', 'is_active', 'department_name',
@@ -68,8 +95,6 @@ class UserRepository implements UserRepositoryInterface
             'updated_at' => $query->orderBy('updated_at', $dir)->orderBy('id', 'desc'),
             default => $query->orderBy('id', $dir),
         };
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**

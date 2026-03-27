@@ -51,6 +51,25 @@ class DepartmentService implements DataTableQueryable
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function iterateRowsForDataTableExport(
+        string $sort,
+        string $direction,
+        array $filters = [],
+    ): iterable {
+        foreach ($this->departmentRepository->cursorForDataTableExport($sort, $direction, $filters) as $department) {
+            yield [
+                'id' => $department->id,
+                'name' => $department->name,
+                'is_active' => $department->is_active ? 'Active' : 'Inactive',
+                'created_at' => $department->created_at?->format('Y-m-d H:i:s') ?? '',
+                'updated_at' => $department->updated_at?->format('Y-m-d H:i:s') ?? '',
+            ];
+        }
+    }
+
+    /**
      * Get a department by ID.
      */
     public function getDepartmentById(int $id): ?Department

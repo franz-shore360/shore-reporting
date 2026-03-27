@@ -23,6 +23,8 @@
     @update:column-filters="onColumnFiltersUpdate"
     @server-reset="onServerReset"
     @bulk-action="onBulkAction"
+    :export-url="canFetch ? '/api/users/export' : ''"
+    :build-export-query-params="buildUsersExportParams"
   >
     <template #cell="{ cell, value, row }">
       <span v-if="cell.column.columnDef.accessorKey === 'profile_image_url'" class="user-avatar-cell">
@@ -309,11 +311,8 @@ const userColumns = computed(() => {
   return base;
 });
 
-function buildUsersListParams() {
-  const params = {
-    page: tablePagination.value.pageIndex + 1,
-    per_page: tablePagination.value.pageSize,
-  };
+function buildUsersExportParams() {
+  const params = {};
   const sort = tableSorting.value[0];
   if (sort?.id) {
     params.sort = sort.id;
@@ -332,6 +331,14 @@ function buildUsersListParams() {
     else if (id === 'department_name') params.filter_department_name = value;
   }
   return params;
+}
+
+function buildUsersListParams() {
+  return {
+    page: tablePagination.value.pageIndex + 1,
+    per_page: tablePagination.value.pageSize,
+    ...buildUsersExportParams(),
+  };
 }
 
 async function fetchUsers() {

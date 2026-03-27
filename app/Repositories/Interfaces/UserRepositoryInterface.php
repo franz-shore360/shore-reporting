@@ -5,6 +5,7 @@ namespace App\Repositories\Interfaces;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\LazyCollection;
 
 interface UserRepositoryInterface
 {
@@ -29,18 +30,24 @@ interface UserRepositoryInterface
     ): LengthAwarePaginator;
 
     /**
-     * Find a user by ID.
+     * Stream users for export (same filters and sort as the data table).
      *
-     * @param  int  $id
-     * @return User|null
+     * @param  array<string, mixed>  $filters
+     * @return LazyCollection<int, User>
+     */
+    public function cursorForDataTableExport(
+        string $sort,
+        string $direction,
+        array $filters = [],
+    ): LazyCollection;
+
+    /**
+     * Find a user by ID.
      */
     public function find(int $id): ?User;
 
     /**
      * Find a user by email.
-     *
-     * @param  string  $email
-     * @return User|null
      */
     public function findByEmail(string $email): ?User;
 
@@ -48,24 +55,18 @@ interface UserRepositoryInterface
      * Create a new user.
      *
      * @param  array<string, mixed>  $data
-     * @return User
      */
     public function create(array $data): User;
 
     /**
      * Update a user.
      *
-     * @param  User  $user
      * @param  array<string, mixed>  $data
-     * @return bool
      */
     public function update(User $user, array $data): bool;
 
     /**
      * Delete a user.
-     *
-     * @param  User  $user
-     * @return bool
      */
     public function delete(User $user): bool;
 }

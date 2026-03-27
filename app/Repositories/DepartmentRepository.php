@@ -5,7 +5,9 @@ namespace App\Repositories;
 use App\Models\Department;
 use App\Repositories\Interfaces\DepartmentRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\LazyCollection;
 
 class DepartmentRepository implements DepartmentRepositoryInterface
 {
@@ -34,9 +36,40 @@ class DepartmentRepository implements DepartmentRepositoryInterface
         string $direction,
         array $filters = [],
     ): LengthAwarePaginator {
-        $dir = $direction === 'desc' ? 'desc' : 'asc';
-        $query = $this->model->newQuery();
+        $query = $this->newDataTableQuery($filters);
+        $this->applyDataTableOrder($query, $sort, $direction);
 
+        return $query->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function cursorForDataTableExport(string $sort, string $direction, array $filters = []): LazyCollection
+    {
+        $query = $this->newDataTableQuery($filters);
+        $this->applyDataTableOrder($query, $sort, $direction);
+
+        return $query->cursor();
+    }
+
+    /**
+     * @param  Builder<Department>  $query
+     */
+    protected function newDataTableQuery(array $filters): Builder
+    {
+        $query = $this->model->newQuery();
+        $this->applyDepartmentFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * @param  Builder<Department>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    protected function applyDepartmentFilters(Builder $query, array $filters): void
+    {
         $id = isset($filters['id']) ? trim((string) $filters['id']) : '';
         if ($id !== '') {
             $query->whereRaw('CAST(departments.id AS CHAR) LIKE ?', ['%'.$id.'%']);
@@ -53,6 +86,14 @@ class DepartmentRepository implements DepartmentRepositoryInterface
         } elseif ($isActive === 'Inactive' || $isActive === '0' || $isActive === 0 || $isActive === false) {
             $query->where('departments.is_active', false);
         }
+    }
+
+    /**
+     * @param  Builder<Department>  $query
+     */
+    protected function applyDataTableOrder(Builder $query, string $sort, string $direction): void
+    {
+        $dir = $direction === 'desc' ? 'desc' : 'asc';
 
         $allowedSorts = ['id', 'name', 'is_active', 'created_at', 'updated_at'];
         if (! in_array($sort, $allowedSorts, true)) {
@@ -66,8 +107,6 @@ class DepartmentRepository implements DepartmentRepositoryInterface
             'updated_at' => $query->orderBy('updated_at', $dir)->orderBy('id', 'desc'),
             default => $query->orderBy('id', $dir),
         };
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**

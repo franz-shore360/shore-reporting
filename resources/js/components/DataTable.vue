@@ -36,6 +36,7 @@
         type="button"
         class="btn btn-sm btn-primary"
         aria-label="Apply column filters"
+        :disabled="exportLoading"
         @click="commitTextFilters"
       >
         Apply Filters
@@ -45,10 +46,56 @@
         type="button"
         class="btn btn-sm btn-secondary"
         aria-label="Reset filters and sorting"
+        :disabled="exportLoading"
         @click="resetFiltersAndSort"
       >
         Reset
       </button>
+      <div v-if="showExport" ref="exportPickerRootRef" class="column-picker">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline column-picker-trigger"
+          :aria-expanded="exportMenuOpen"
+          aria-haspopup="true"
+          aria-controls="data-table-export-panel"
+          :disabled="exportLoading || loading"
+          @click="toggleExportMenu"
+        >
+          Export
+        </button>
+        <div
+          v-show="exportMenuOpen"
+          id="data-table-export-panel"
+          class="column-picker-panel data-table-export-panel"
+          role="menu"
+          @click.stop
+        >
+          <ul class="column-picker-list" role="none">
+            <li class="column-picker-item" role="none">
+              <button
+                type="button"
+                class="data-table-export-option"
+                role="menuitem"
+                :disabled="exportLoading || loading"
+                @click="selectExportFormat('csv')"
+              >
+                CSV
+              </button>
+            </li>
+            <li class="column-picker-item" role="none">
+              <button
+                type="button"
+                class="data-table-export-option"
+                role="menuitem"
+                :disabled="exportLoading || loading"
+                @click="selectExportFormat('xlsx')"
+              >
+                Excel
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div v-if="showPicker" ref="pickerRootRef" class="column-picker">
         <button
           type="button"
@@ -56,7 +103,8 @@
           :aria-expanded="columnMenuOpen"
           aria-haspopup="true"
           aria-controls="column-picker-panel"
-          @click="columnMenuOpen = !columnMenuOpen"
+          :disabled="exportLoading"
+          @click="toggleColumnMenu"
         >
           Columns
         </button>
@@ -99,6 +147,7 @@
       >
       <div class="data-table-pagination-info">
         <span v-if="loading" class="data-table-loading-text">Loading…</span>
+        <span v-else-if="exportLoading" class="data-table-loading-text">Exporting…</span>
         <span v-else-if="total > 0" class="muted">
           Showing {{ rangeFrom }}–{{ rangeTo }} of {{ total }}
         </span>
@@ -109,7 +158,7 @@
           <span>Rows per page</span>
           <select
             :value="pagination.pageSize"
-            :disabled="loading"
+            :disabled="isTableBlocking"
             @change="onPageSizeSelect($event)"
           >
             <option :value="10">10</option>
@@ -121,7 +170,7 @@
         <button
           type="button"
           class="btn btn-sm btn-outline"
-          :disabled="loading || !canPrevPage"
+          :disabled="isTableBlocking || !canPrevPage"
           @click="goFirstPage"
         >
           First
@@ -129,7 +178,7 @@
         <button
           type="button"
           class="btn btn-sm btn-outline"
-          :disabled="loading || !canPrevPage"
+          :disabled="isTableBlocking || !canPrevPage"
           @click="goPrevPage"
         >
           Previous
@@ -140,7 +189,7 @@
         <button
           type="button"
           class="btn btn-sm btn-outline"
-          :disabled="loading || !canNextPage"
+          :disabled="isTableBlocking || !canNextPage"
           @click="goNextPage"
         >
           Next
@@ -148,7 +197,7 @@
         <button
           type="button"
           class="btn btn-sm btn-outline"
-          :disabled="loading || !canNextPage"
+          :disabled="isTableBlocking || !canNextPage"
           @click="goLastPage"
         >
           Last
@@ -159,12 +208,12 @@
 
     <div class="data-table-wrapper">
       <div
-        v-if="loading"
+        v-if="isTableBlocking"
         class="data-table-loading-overlay"
         role="status"
         aria-live="polite"
         aria-busy="true"
-        aria-label="Loading table data"
+        :aria-label="loading ? 'Loading table data' : 'Exporting'"
       >
         <span class="data-table-loading-spinner" aria-hidden="true" />
       </div>
@@ -317,6 +366,7 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from '@tanstack/vue-table';
+import axios from 'axios';
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/date';
 
 const props = defineProps({
@@ -419,6 +469,16 @@ const props = defineProps({
    * Row is TanStack Row; use row.original for data.
    */
   isRowSelectable: {
+    type: Function,
+    default: null,
+  },
+  /** Server-side export: GET URL (e.g. /api/users/export); requires buildExportQueryParams. */
+  exportUrl: {
+    type: String,
+    default: null,
+  },
+  /** Returns plain query params (sort, direction, filter_*) — omit page/per_page. */
+  buildExportQueryParams: {
     type: Function,
     default: null,
   },
@@ -1161,9 +1221,82 @@ const showReset = computed(
   () => props.showResetButton && (props.sortable || props.filterable),
 );
 
-const showToolbar = computed(
-  () => showPicker.value || showReset.value || showApplyFilters.value,
+const exportLoading = ref(false);
+const exportMenuOpen = ref(false);
+const exportPickerRootRef = ref(null);
+
+/** Data fetch or file export: same overlay and (server-side) pagination lock as loading. */
+const isTableBlocking = computed(() => props.loading || exportLoading.value);
+
+const showExport = computed(
+  () =>
+    props.serverSide &&
+    typeof props.exportUrl === 'string' &&
+    props.exportUrl.length > 0 &&
+    typeof props.buildExportQueryParams === 'function',
 );
+
+const showToolbar = computed(
+  () => showPicker.value || showReset.value || showApplyFilters.value || showExport.value,
+);
+
+function toggleColumnMenu() {
+  columnMenuOpen.value = !columnMenuOpen.value;
+  if (columnMenuOpen.value) {
+    exportMenuOpen.value = false;
+  }
+}
+
+function toggleExportMenu() {
+  exportMenuOpen.value = !exportMenuOpen.value;
+  if (exportMenuOpen.value) {
+    columnMenuOpen.value = false;
+  }
+}
+
+function selectExportFormat(format) {
+  exportMenuOpen.value = false;
+  runExport(format);
+}
+
+async function runExport(format) {
+  if (!showExport.value) return;
+  exportLoading.value = true;
+  columnMenuOpen.value = false;
+  try {
+    const base = props.buildExportQueryParams();
+    const params = { ...(base && typeof base === 'object' ? base : {}), format };
+    const res = await axios.get(props.exportUrl, {
+      params,
+      responseType: 'blob',
+    });
+    const disposition = res.headers['content-disposition'] || res.headers['Content-Disposition'];
+    let filename = `export.${format === 'xlsx' ? 'xlsx' : 'csv'}`;
+    if (disposition && typeof disposition === 'string') {
+      const m = /filename\*?=(?:UTF-8'')?["']?([^;"']+)/i.exec(disposition);
+      if (m?.[1]) {
+        try {
+          filename = decodeURIComponent(m[1].replace(/['"]/g, ''));
+        } catch {
+          filename = m[1].replace(/['"]/g, '');
+        }
+      }
+    }
+    const blob = new Blob([res.data], {
+      type: res.headers['content-type'] || '',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Avoid noisy console if request aborted; parent can add toast later.
+  } finally {
+    exportLoading.value = false;
+  }
+}
 
 watch(
   [
@@ -1411,6 +1544,7 @@ function resetColumnVisibility() {
 
 function resetFiltersAndSort() {
   columnMenuOpen.value = false;
+  exportMenuOpen.value = false;
   if (props.serverSide) {
     emit('server-reset');
     return;
@@ -1424,10 +1558,17 @@ function resetFiltersAndSort() {
 }
 
 function onDocClick(e) {
-  if (!columnMenuOpen.value) return;
-  const root = pickerRootRef.value;
-  if (root && !root.contains(e.target)) {
-    columnMenuOpen.value = false;
+  if (columnMenuOpen.value) {
+    const root = pickerRootRef.value;
+    if (root && !root.contains(e.target)) {
+      columnMenuOpen.value = false;
+    }
+  }
+  if (exportMenuOpen.value) {
+    const exportRoot = exportPickerRootRef.value;
+    if (exportRoot && !exportRoot.contains(e.target)) {
+      exportMenuOpen.value = false;
+    }
   }
 }
 
@@ -1763,6 +1904,36 @@ watch(
 .column-picker-reset {
   width: 100%;
   justify-content: center;
+}
+
+.data-table-export-panel {
+  min-width: 8rem;
+  max-height: none;
+  padding: var(--space-1);
+}
+
+.data-table-export-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.data-table-export-option:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.data-table-export-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .data-table-th-inner {

@@ -34,8 +34,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::post('users/bulk-destroy', [UserController::class, 'bulkDestroy']);
+    Route::get('users/export', [UserController::class, 'export']);
     Route::apiResource('users', UserController::class);
     Route::get('departments/options', [DepartmentController::class, 'options']);
+    Route::get('departments/export', [DepartmentController::class, 'export']);
     Route::apiResource('departments', DepartmentController::class);
 
     Route::get('permissions', [PermissionController::class, 'index']);

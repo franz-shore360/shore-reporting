@@ -20,11 +20,54 @@ class DataTableService
      */
     protected function paginationRules(): array
     {
+        return array_merge($this->pageRules(), $this->sortRules());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function pageRules(): array
+    {
         return [
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function sortRules(): array
+    {
+        return [
             'sort' => ['sometimes', 'string', 'max:64'],
             'direction' => ['sometimes', 'in:asc,desc'],
+        ];
+    }
+
+    /**
+     * @return array{sort: string, direction: string, filters: array<string, mixed>, format: string}
+     */
+    public function validateExportRequest(Request $request, DataTableDefinition $definition): array
+    {
+        $validated = $request->validate(array_merge(
+            [
+                'format' => ['required', 'in:csv,xlsx'],
+            ],
+            $this->sortRules(),
+            $definition->filterRules(),
+        ));
+
+        $sort = (string) ($validated['sort'] ?? $definition->defaultSortColumn());
+        $direction = (string) ($validated['direction'] ?? $definition->defaultSortDirection());
+        $filters = $this->mapFilters($validated, $definition);
+        $format = (string) $validated['format'];
+
+        return [
+            'sort' => $sort,
+            'direction' => $direction,
+            'filters' => $filters,
+            'format' => $format,
         ];
     }
 

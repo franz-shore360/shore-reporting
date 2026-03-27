@@ -27,4 +27,11 @@ interface DataTableDefinition
     public function defaultSortColumn(): string;
 
     public function defaultSortDirection(): string;
+
+    /**
+     * Ordered export columns: internal row key => spreadsheet header label.
+     *
+     * @return array<string, string>
+     */
+    public function exportColumns(): array;
 }

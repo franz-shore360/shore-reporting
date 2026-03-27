@@ -17,6 +17,8 @@
     @update:sorting="onSortingUpdate"
     @update:column-filters="onColumnFiltersUpdate"
     @server-reset="onServerReset"
+    :export-url="canFetch ? '/api/departments/export' : ''"
+    :build-export-query-params="buildDepartmentsExportParams"
   >
     <template #cell="{ cell, value, row }">
       <span v-if="cell.column.id === 'is_active'" class="badge-cell">
@@ -147,11 +149,8 @@ const departmentColumns = computed(() => {
   return base;
 });
 
-function buildDepartmentsListParams() {
-  const params = {
-    page: tablePagination.value.pageIndex + 1,
-    per_page: tablePagination.value.pageSize,
-  };
+function buildDepartmentsExportParams() {
+  const params = {};
   const sort = tableSorting.value[0];
   if (sort?.id) {
     params.sort = sort.id;
@@ -167,6 +166,14 @@ function buildDepartmentsListParams() {
     else if (id === 'is_active') params.filter_is_active = value;
   }
   return params;
+}
+
+function buildDepartmentsListParams() {
+  return {
+    page: tablePagination.value.pageIndex + 1,
+    per_page: tablePagination.value.pageSize,
+    ...buildDepartmentsExportParams(),
+  };
 }
 
 async function fetchDepartments() {

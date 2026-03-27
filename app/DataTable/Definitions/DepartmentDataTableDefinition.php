@@ -33,4 +33,15 @@ final class DepartmentDataTableDefinition implements DataTableDefinition
     {
         return 'desc';
     }
+
+    public function exportColumns(): array
+    {
+        return [
+            'id' => 'ID',
+            'name' => 'Name',
+            'is_active' => 'Status',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
+        ];
+    }
 }

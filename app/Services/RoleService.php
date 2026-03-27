@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\DataTable\DataTableQueryable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Role;
 
@@ -21,7 +22,37 @@ class RoleService implements DataTableQueryable
         string $direction,
         array $filters = [],
     ): LengthAwarePaginator {
-        $dir = $direction === 'desc' ? 'desc' : 'asc';
+        $query = $this->newDataTableQuery($filters);
+        $this->applyDataTableOrder($query, $sort, $direction);
+
+        return $query->paginate($perPage, ['id', 'name'], 'page', $page);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function iterateRowsForDataTableExport(
+        string $sort,
+        string $direction,
+        array $filters = [],
+    ): iterable {
+        $query = $this->newDataTableQuery($filters);
+        $this->applyDataTableOrder($query, $sort, $direction);
+
+        foreach ($query->cursor(['id', 'name']) as $role) {
+            yield [
+                'id' => $role->id,
+                'name' => $role->name,
+            ];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Role>
+     */
+    protected function newDataTableQuery(array $filters): Builder
+    {
         $query = Role::query()->where('guard_name', self::GUARD_NAME);
 
         $id = isset($filters['id']) ? trim((string) $filters['id']) : '';
@@ -34,6 +65,16 @@ class RoleService implements DataTableQueryable
             $query->where('roles.name', 'like', '%'.$name.'%');
         }
 
+        return $query;
+    }
+
+    /**
+     * @param  Builder<Role>  $query
+     */
+    protected function applyDataTableOrder(Builder $query, string $sort, string $direction): void
+    {
+        $dir = $direction === 'desc' ? 'desc' : 'asc';
+
         $allowedSorts = ['id', 'name'];
         if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'id';
@@ -44,8 +85,6 @@ class RoleService implements DataTableQueryable
         } else {
             $query->orderBy('id', $dir);
         }
-
-        return $query->paginate($perPage, ['id', 'name'], 'page', $page);
     }
 
     /**

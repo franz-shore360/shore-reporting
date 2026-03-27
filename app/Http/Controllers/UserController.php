@@ -6,19 +6,22 @@ use App\DataTable\Definitions\UserDataTableDefinition;
 use App\Http\Requests\BulkDestroyUsersRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Services\DataTableExportService;
 use App\Services\DataTableService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
     public function __construct(
         protected UserService $userService,
         protected DataTableService $dataTableService,
+        protected DataTableExportService $dataTableExportService,
     ) {
-        $this->middleware('permission:user-list', ['only' => ['index', 'show']]);
+        $this->middleware('permission:user-list', ['only' => ['index', 'show', 'export']]);
         $this->middleware('permission:user-create', ['only' => ['store']]);
         $this->middleware('permission:user-edit', ['only' => ['update']]);
         $this->middleware('permission:user-delete', ['only' => ['destroy', 'bulkDestroy']]);
@@ -36,6 +39,19 @@ class UserController extends Controller
         );
 
         return response()->json($paginator);
+    }
+
+    /**
+     * Export the current grid result set (filters + sort) as CSV or Excel.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        return $this->dataTableExportService->stream(
+            $request,
+            $this->userService,
+            new UserDataTableDefinition,
+            'users',
+        );
     }
 
     /**

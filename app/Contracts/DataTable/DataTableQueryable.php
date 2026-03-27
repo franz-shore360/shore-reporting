@@ -19,4 +19,17 @@ interface DataTableQueryable
         string $direction,
         array $filters = [],
     ): LengthAwarePaginator;
+
+    /**
+     * Plain rows for CSV/XLSX export (same filters and sort as the grid).
+     *
+     * Keys must match {@see DataTableDefinition::exportColumns()}.
+     *
+     * @return iterable<int, array<string, mixed>>
+     */
+    public function iterateRowsForDataTableExport(
+        string $sort,
+        string $direction,
+        array $filters = [],
+    ): iterable;
 }

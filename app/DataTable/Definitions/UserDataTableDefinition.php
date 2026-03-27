@@ -39,4 +39,18 @@ final class UserDataTableDefinition implements DataTableDefinition
     {
         return 'desc';
     }
+
+    public function exportColumns(): array
+    {
+        return [
+            'id' => 'ID',
+            'full_name' => 'Name',
+            'email' => 'Email',
+            'roles' => 'Roles',
+            'is_active' => 'Status',
+            'department' => 'Department',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
+        ];
+    }
 }

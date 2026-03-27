@@ -60,6 +60,28 @@ class UserService implements DataTableQueryable
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function iterateRowsForDataTableExport(
+        string $sort,
+        string $direction,
+        array $filters = [],
+    ): iterable {
+        foreach ($this->userRepository->cursorForDataTableExport($sort, $direction, $filters) as $user) {
+            yield [
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'roles' => $user->roles->pluck('name')->join(', '),
+                'is_active' => $user->is_active ? 'Active' : 'Inactive',
+                'department' => $user->department?->name ?? '',
+                'created_at' => $user->created_at?->format('Y-m-d H:i:s') ?? '',
+                'updated_at' => $user->updated_at?->format('Y-m-d H:i:s') ?? '',
+            ];
+        }
+    }
+
+    /**
      * Get a user by ID.
      */
     public function getUserById(int $id): ?User

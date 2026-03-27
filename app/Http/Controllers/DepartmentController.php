@@ -5,18 +5,21 @@ namespace App\Http\Controllers;
 use App\DataTable\Definitions\DepartmentDataTableDefinition;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
+use App\Services\DataTableExportService;
 use App\Services\DataTableService;
 use App\Services\DepartmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DepartmentController extends Controller
 {
     public function __construct(
         protected DepartmentService $departmentService,
         protected DataTableService $dataTableService,
+        protected DataTableExportService $dataTableExportService,
     ) {
-        $this->middleware('permission:department-list', ['only' => ['index', 'show']]);
+        $this->middleware('permission:department-list', ['only' => ['index', 'show', 'export']]);
         $this->middleware('permission:department-create', ['only' => ['store']]);
         $this->middleware('permission:department-edit', ['only' => ['update']]);
         $this->middleware('permission:department-delete', ['only' => ['destroy']]);
@@ -41,6 +44,16 @@ class DepartmentController extends Controller
         );
 
         return response()->json($paginator);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        return $this->dataTableExportService->stream(
+            $request,
+            $this->departmentService,
+            new DepartmentDataTableDefinition,
+            'departments',
+        );
     }
 
     public function store(StoreDepartmentRequest $request): JsonResponse
