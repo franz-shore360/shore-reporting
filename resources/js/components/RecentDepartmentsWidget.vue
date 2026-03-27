@@ -17,7 +17,7 @@
         </span>
         <template v-else>{{ formatTableCellValue(cell.column.columnDef, value) }}</template>
       </template>
-      <template #empty>No departments yet.</template>
+      <template #empty>No departments found.</template>
     </DataTable>
   </div>
 </template>

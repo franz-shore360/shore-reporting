@@ -20,6 +20,7 @@
         :data="roles"
         :sortable="true"
         :filterable="true"
+        :loading="rolesLoading"
         :initial-sorting="rolesTableInitialSorting"
       >
         <template #cell="{ cell, value, row }">
@@ -45,7 +46,7 @@
           </span>
           <template v-else>{{ formatTableCellValue(cell.column.columnDef, value) }}</template>
         </template>
-        <template #empty>No roles yet.</template>
+        <template #empty>No roles found.</template>
       </DataTable>
     </div>
 
@@ -127,6 +128,7 @@ const adminRoleName = 'Admin';
 const rolesTableInitialSorting = Object.freeze([{ id: 'id', desc: true }]);
 const canAccessRoles = computed(() => authState.user?.role_names?.includes('Admin') ?? false);
 const roles = ref([]);
+const rolesLoading = ref(false);
 const permissionGroups = ref(null);
 const showModal = ref(false);
 const editingRole = ref(null);
@@ -166,11 +168,14 @@ const roleColumns = [
 ];
 
 async function fetchRoles() {
+  rolesLoading.value = true;
   try {
     const { data } = await axios.get('/api/roles');
     roles.value = data;
   } catch (e) {
     roles.value = [];
+  } finally {
+    rolesLoading.value = false;
   }
 }
 

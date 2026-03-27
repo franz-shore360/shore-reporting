@@ -73,7 +73,7 @@ const props = defineProps({
   },
   emptyMessage: {
     type: String,
-    default: 'No departments yet.',
+    default: 'No departments found.',
   },
 });
 

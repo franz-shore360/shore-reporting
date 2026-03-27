@@ -121,7 +121,7 @@ const props = defineProps({
   },
   emptyMessage: {
     type: String,
-    default: 'No users yet.',
+    default: 'No users found.',
   },
 });
 

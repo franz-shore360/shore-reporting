@@ -159,7 +159,7 @@
 
     <div class="data-table-wrapper">
       <div
-        v-if="serverSide && loading"
+        v-if="loading"
         class="data-table-loading-overlay"
         role="status"
         aria-live="polite"
@@ -302,8 +302,8 @@
         </tbody>
         </table>
       </div>
-      <p v-if="data.length === 0" class="data-table-empty">
-        <slot name="empty">No data</slot>
+      <p v-if="showTableEmpty" class="data-table-empty">
+        <slot name="empty">No results found.</slot>
       </p>
     </div>
   </div>
@@ -926,6 +926,22 @@ const table = useVueTable({
       }
     : {}),
   ...(props.filterable && !props.serverSide ? { getFilteredRowModel: getFilteredRowModel() } : {}),
+});
+
+/**
+ * No visible rows: server-side and client grids without column filters use `data.length`
+ * (TanStack row model is not reliably reactive to `data` in Vue for server mode).
+ * Client + filterable (e.g. Roles): use filtered row model so “no matches” shows empty copy.
+ */
+const showTableEmpty = computed(() => {
+  if (props.serverSide || !props.filterable) {
+    return !Array.isArray(props.data) || props.data.length === 0;
+  }
+  try {
+    return table.getRowModel().rows.length === 0;
+  } catch {
+    return !Array.isArray(props.data) || props.data.length === 0;
+  }
 });
 
 /* ——— Row selection & bulk actions (reusable) ——— */
