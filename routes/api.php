@@ -29,7 +29,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
-    Route::get('email-logs/export', [EmailLogController::class, 'export']);
     Route::get('email-logs', [EmailLogController::class, 'index']);
     Route::get('email-logs/{email_log}', [EmailLogController::class, 'show']);
 

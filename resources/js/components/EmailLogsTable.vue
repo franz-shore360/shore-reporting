@@ -17,8 +17,6 @@
     @update:sorting="onSortingUpdate"
     @update:column-filters="onColumnFiltersUpdate"
     @server-reset="onServerReset"
-    :export-url="canFetch ? '/api/email-logs/export' : ''"
-    :build-export-query-params="buildEmailLogsExportParams"
   >
     <template #cell="{ cell, value, row }">
       <span v-if="cell.column.columnDef.accessorKey === 'actions'" class="actions-cell">
@@ -124,8 +122,11 @@ const emailLogColumns = computed(() => [
   },
 ]);
 
-function buildEmailLogsExportParams() {
-  const params = {};
+function buildEmailLogsListParams() {
+  const params = {
+    page: tablePagination.value.pageIndex + 1,
+    per_page: tablePagination.value.pageSize,
+  };
   const sort = tableSorting.value[0];
   if (sort?.id) {
     params.sort = sort.id;
@@ -142,14 +143,6 @@ function buildEmailLogsExportParams() {
     else if (id === 'from_address') params.filter_from_address = value;
   }
   return params;
-}
-
-function buildEmailLogsListParams() {
-  return {
-    page: tablePagination.value.pageIndex + 1,
-    per_page: tablePagination.value.pageSize,
-    ...buildEmailLogsExportParams(),
-  };
 }
 
 async function fetchRows() {

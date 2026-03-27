@@ -33,14 +33,6 @@ class EmailLogService implements DataTableQueryable
         string $direction,
         array $filters = [],
     ): iterable {
-        foreach ($this->emailLogRepository->cursorForDataTableExport($sort, $direction, $filters) as $log) {
-            yield [
-                'id' => $log->id,
-                'subject' => $log->subject ?? '',
-                'to_addresses' => $log->to_addresses ?? '',
-                'from_address' => $log->from_address ?? '',
-                'sent_at' => $log->sent_at?->format('Y-m-d H:i:s') ?? '',
-            ];
-        }
+        return new \EmptyIterator;
     }
 }

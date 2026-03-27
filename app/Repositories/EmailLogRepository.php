@@ -6,7 +6,6 @@ use App\Models\EmailLog;
 use App\Repositories\Interfaces\EmailLogRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\LazyCollection;
 
 class EmailLogRepository implements EmailLogRepositoryInterface
 {
@@ -28,17 +27,6 @@ class EmailLogRepository implements EmailLogRepositoryInterface
         $this->applyDataTableOrder($query, $sort, $direction);
 
         return $query->paginate($perPage, ['*'], 'page', $page);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function cursorForDataTableExport(string $sort, string $direction, array $filters = []): LazyCollection
-    {
-        $query = $this->newDataTableQuery($filters);
-        $this->applyDataTableOrder($query, $sort, $direction);
-
-        return $query->cursor();
     }
 
     /**
