@@ -40,6 +40,7 @@ final class DepartmentDataTableDefinition implements DataTableDefinition
             'id' => 'ID',
             'name' => 'Name',
             'is_active' => 'Status',
+            'users_count' => 'Users',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];

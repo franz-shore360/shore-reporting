@@ -51,6 +51,7 @@ const departmentColumns = [
     accessorFn: (row) => (row.is_active ? 'Active' : 'Inactive'),
     header: 'Status',
   },
+  { accessorKey: 'users_count', header: 'Users' },
   { accessorKey: 'created_at', header: 'Created At', meta: { type: 'datetime' } },
 ];
 

@@ -123,6 +123,13 @@ const departmentColumns = computed(() => {
       ],
     },
     {
+      accessorKey: 'users_count',
+      header: 'Users',
+      enableColumnFilter: false,
+      enableSorting: true,
+      sortingFn: 'basic',
+    },
+    {
       accessorKey: 'created_at',
       header: 'Created At',
       enableColumnFilter: false,

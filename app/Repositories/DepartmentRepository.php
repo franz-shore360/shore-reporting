@@ -58,7 +58,7 @@ class DepartmentRepository implements DepartmentRepositoryInterface
      */
     protected function newDataTableQuery(array $filters): Builder
     {
-        $query = $this->model->newQuery();
+        $query = $this->model->newQuery()->withCount('users');
         $this->applyDepartmentFilters($query, $filters);
 
         return $query;
@@ -95,7 +95,7 @@ class DepartmentRepository implements DepartmentRepositoryInterface
     {
         $dir = $direction === 'desc' ? 'desc' : 'asc';
 
-        $allowedSorts = ['id', 'name', 'is_active', 'created_at', 'updated_at'];
+        $allowedSorts = ['id', 'name', 'is_active', 'users_count', 'created_at', 'updated_at'];
         if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'id';
         }
@@ -103,6 +103,7 @@ class DepartmentRepository implements DepartmentRepositoryInterface
         match ($sort) {
             'name' => $query->orderBy('name', $dir)->orderBy('id', 'desc'),
             'is_active' => $query->orderBy('is_active', $dir)->orderBy('id', 'desc'),
+            'users_count' => $query->orderBy('users_count', $dir)->orderBy('id', 'desc'),
             'created_at' => $query->orderBy('created_at', $dir)->orderBy('id', 'desc'),
             'updated_at' => $query->orderBy('updated_at', $dir)->orderBy('id', 'desc'),
             default => $query->orderBy('id', $dir),

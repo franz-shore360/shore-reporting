@@ -63,6 +63,7 @@ class DepartmentService implements DataTableQueryable
                 'id' => $department->id,
                 'name' => $department->name,
                 'is_active' => $department->is_active ? 'Active' : 'Inactive',
+                'users_count' => (int) ($department->users_count ?? 0),
                 'created_at' => $department->created_at?->format('Y-m-d H:i:s') ?? '',
                 'updated_at' => $department->updated_at?->format('Y-m-d H:i:s') ?? '',
             ];
