@@ -23,8 +23,8 @@
         <div v-if="hasEmailLogList" class="account-dropdown" ref="logsDropdownRef">
           <button
             type="button"
-            class="account-dropdown-trigger btn btn-ghost btn-sm"
-            :class="{ 'account-dropdown-trigger--active': logsOpen }"
+            class="account-dropdown-trigger btn btn-ghost"
+            :class="{ 'account-dropdown-trigger--active': logsOpen || isLogsSectionActive }"
             aria-haspopup="true"
             :aria-expanded="logsOpen"
             aria-label="Logs menu"
@@ -47,8 +47,8 @@
         <div class="account-dropdown" ref="accountDropdownRef">
           <button
             type="button"
-            class="account-dropdown-trigger btn btn-ghost btn-sm"
-            :class="{ 'account-dropdown-trigger--active': accountOpen }"
+            class="account-dropdown-trigger btn btn-ghost"
+            :class="{ 'account-dropdown-trigger--active': accountOpen || isAccountSectionActive }"
             aria-haspopup="true"
             :aria-expanded="accountOpen"
             :aria-label="`Account menu, ${userDisplayName}`"
@@ -130,14 +130,21 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import { authState } from './auth';
 import { useTheme } from './composables/useTheme';
 import { resetDashboardStats } from './composables/useDashboardStats';
 
 const router = useRouter();
+const route = useRoute();
 const { theme, toggleTheme } = useTheme();
+
+/** Child routes that keep the Logs parent highlighted (add names when new log pages ship). */
+const LOGS_SECTION_ROUTE_NAMES = ['email-logs'];
+
+const isLogsSectionActive = computed(() => LOGS_SECTION_ROUTE_NAMES.includes(route.name));
+const isAccountSectionActive = computed(() => route.name === 'profile');
 
 const accountOpen = ref(false);
 const accountDropdownRef = ref(null);
@@ -227,6 +234,7 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-2);
   max-width: 14rem;
+  font-weight: var(--font-medium);
 }
 .nav-user-avatar {
   flex-shrink: 0;
