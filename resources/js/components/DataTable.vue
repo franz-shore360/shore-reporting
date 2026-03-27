@@ -158,6 +158,16 @@
     </div>
 
     <div class="data-table-wrapper">
+      <div
+        v-if="serverSide && loading"
+        class="data-table-loading-overlay"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Loading table data"
+      >
+        <span class="data-table-loading-spinner" aria-hidden="true" />
+      </div>
       <div class="data-table-x-scroll">
         <table ref="tableRef" class="data-table">
         <thead>
@@ -1533,6 +1543,50 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.data-table-wrapper {
+  position: relative;
+}
+
+.data-table-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-bg-elevated) 82%, transparent);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  border-radius: inherit;
+  pointer-events: auto;
+  animation: data-table-overlay-in 0.2s ease;
+}
+
+.data-table-loading-spinner {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: data-table-spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes data-table-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes data-table-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .data-table-sticky-controls {
