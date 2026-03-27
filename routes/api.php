@@ -29,8 +29,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
+    Route::post('email-logs/bulk-destroy', [EmailLogController::class, 'bulkDestroy']);
     Route::get('email-logs', [EmailLogController::class, 'index']);
     Route::get('email-logs/{email_log}', [EmailLogController::class, 'show']);
+    Route::delete('email-logs/{email_log}', [EmailLogController::class, 'destroy']);
 
     /*
     |--------------------------------------------------------------------------

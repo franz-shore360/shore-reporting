@@ -1,5 +1,6 @@
 <template>
   <DataTable
+    ref="dataTableRef"
     storage-key="email-logs"
     :columns="emailLogColumns"
     :data="rows"
@@ -13,15 +14,33 @@
     :pagination="tablePagination"
     :sorting="tableSorting"
     :column-filters="tableColumnFilters"
+    :row-selection-enabled="canDelete"
+    :bulk-actions="bulkActions"
     @update:pagination="onPaginationUpdate"
     @update:sorting="onSortingUpdate"
     @update:column-filters="onColumnFiltersUpdate"
     @server-reset="onServerReset"
+    @bulk-action="onBulkAction"
   >
     <template #cell="{ cell, value, row }">
       <span v-if="cell.column.columnDef.accessorKey === 'actions'" class="actions-cell">
-        <button type="button" class="btn btn-sm btn-outline" @click="emit('view', row.original.id)">
-          View
+        <button
+          type="button"
+          class="btn btn-sm btn-outline btn-icon"
+          title="View"
+          aria-label="View"
+          @click="emit('view', row.original.id)"
+        >
+          <GridIcon name="view" />
+        </button>
+        <button
+          v-if="canDelete"
+          type="button"
+          class="btn btn-sm btn-danger btn-icon"
+          title="Delete"
+          @click="emit('delete-request', row.original)"
+        >
+          <GridIcon name="trash" />
         </button>
       </span>
       <span
@@ -34,12 +53,27 @@
     </template>
     <template #empty>{{ emptyMessage }}</template>
   </DataTable>
+
+  <ConfirmModal
+    v-model:open="bulkDeleteModalOpen"
+    title="Delete Email Logs"
+    :confirm-label="bulkDeleteLoading ? 'Deleting…' : 'Delete'"
+    variant="danger"
+    :loading="bulkDeleteLoading"
+    @confirm="executeBulkDelete"
+  >
+    <p>
+      You are about to delete <strong>{{ bulkDeletePendingCount }} email log(s)</strong>. This cannot be undone.
+    </p>
+  </ConfirmModal>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import DataTable from './DataTable.vue';
+import ConfirmModal from './ConfirmModal.vue';
+import GridIcon from './icons/GridIcons.vue';
 import { formatTableCellValue } from '../utils/date';
 
 const props = defineProps({
@@ -47,13 +81,79 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  canDelete: {
+    type: Boolean,
+    default: false,
+  },
   emptyMessage: {
     type: String,
     default: 'No sent emails logged yet.',
   },
 });
 
-const emit = defineEmits(['view']);
+const emit = defineEmits(['view', 'delete-request', 'notify']);
+
+const dataTableRef = ref(null);
+
+const bulkDeleteIds = ref(null);
+const bulkDeleteLoading = ref(false);
+
+const bulkDeleteModalOpen = computed({
+  get: () => Array.isArray(bulkDeleteIds.value) && bulkDeleteIds.value.length > 0,
+  set(isOpen) {
+    if (!isOpen && !bulkDeleteLoading.value) {
+      bulkDeleteIds.value = null;
+    }
+  },
+});
+
+const bulkDeletePendingCount = computed(() =>
+  Array.isArray(bulkDeleteIds.value) ? bulkDeleteIds.value.length : 0,
+);
+
+const bulkActions = computed(() => {
+  const actions = [];
+  if (props.canDelete) {
+    actions.push({ value: 'delete', label: 'Delete selected' });
+  }
+  return actions;
+});
+
+function onBulkAction({ action, ids }) {
+  if (!ids?.length) return;
+  if (action === 'delete' && props.canDelete) {
+    bulkDeleteIds.value = [...ids.map(String)];
+  }
+}
+
+async function executeBulkDelete() {
+  const ids = bulkDeleteIds.value;
+  if (!ids?.length || !props.canDelete) return;
+  bulkDeleteLoading.value = true;
+  try {
+    const { data } = await axios.post('/api/email-logs/bulk-destroy', {
+      ids: ids.map((id) => Number(id)),
+    });
+    bulkDeleteIds.value = null;
+    dataTableRef.value?.clearRowSelection();
+    await fetchRows();
+    const parts = [`${data.deleted ?? 0} email log(s) deleted.`];
+    if ((data.skipped_missing ?? 0) > 0) {
+      parts.push(`${data.skipped_missing} could not be removed.`);
+    }
+    emit('notify', { text: parts.join(' ') });
+  } catch (e) {
+    const msg = e.response?.data?.message ?? 'Bulk delete failed.';
+    if (e.response?.status === 422 && e.response?.data?.errors) {
+      const err = e.response.data.errors;
+      emit('notify', { text: Object.values(err).flat().join(' ') || msg });
+    } else {
+      emit('notify', { text: msg });
+    }
+  } finally {
+    bulkDeleteLoading.value = false;
+  }
+}
 
 const emailLogsTableInitialSorting = Object.freeze([{ id: 'sent_at', desc: true }]);
 
@@ -115,7 +215,7 @@ const emailLogColumns = computed(() => [
   },
   {
     accessorKey: 'actions',
-    header: 'Details',
+    header: 'Actions',
     enableColumnFilter: false,
     enableHiding: false,
     enableSorting: false,

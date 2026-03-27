@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Interfaces;
 
+use App\Models\EmailLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface EmailLogRepositoryInterface
@@ -16,4 +17,13 @@ interface EmailLogRepositoryInterface
         string $direction,
         array $filters = [],
     ): LengthAwarePaginator;
+
+    public function find(int $id): ?EmailLog;
+
+    public function delete(EmailLog $emailLog): bool;
+
+    /**
+     * @param  array<int, int>  $ids
+     */
+    public function deleteByIds(array $ids): int;
 }

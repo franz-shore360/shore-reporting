@@ -14,8 +14,33 @@
     </div>
 
     <div v-else class="card table-card">
-      <EmailLogsTable :can-fetch="canView" @view="openDetail" />
+      <EmailLogsTable
+        ref="emailLogsTableRef"
+        :can-fetch="canView"
+        :can-delete="canDelete"
+        @view="openDetail"
+        @delete-request="confirmDelete"
+        @notify="onEmailLogsTableNotify"
+      />
     </div>
+
+    <ConfirmModal
+      v-model:open="emailLogDeleteModalOpen"
+      title="Delete Email Log"
+      :confirm-label="deleteLoading ? 'Deleting…' : 'Delete'"
+      variant="danger"
+      :loading="deleteLoading"
+      @confirm="deleteEmailLog"
+    >
+      <p v-if="!deleteError">
+        Are you sure you want to delete this email log
+        <template v-if="emailLogToDelete?.subject">
+          (<strong>{{ emailLogToDelete.subject }}</strong>)
+        </template>
+        <template v-else> (ID {{ emailLogToDelete?.id }})</template>? This cannot be undone.
+      </p>
+      <p v-else class="form-error">{{ deleteError }}</p>
+    </ConfirmModal>
 
     <div v-if="detailOpen" class="modal-backdrop" @click.self="closeDetail">
       <div class="modal email-log-detail-modal">
@@ -42,6 +67,8 @@
         </div>
       </div>
     </div>
+
+    <SuccessToast ref="successToastRef" />
   </div>
 </template>
 
@@ -52,8 +79,66 @@ import DOMPurify from 'dompurify';
 import { authState } from '../auth';
 import { formatDateTimeDisplay } from '../utils/date';
 import EmailLogsTable from '../components/EmailLogsTable.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import SuccessToast from '../components/SuccessToast.vue';
 
-const canView = computed(() => (authState.user?.permission_names ?? []).includes('email-log-list'));
+const emailLogsTableRef = ref(null);
+const successToastRef = ref(null);
+
+const permissionNames = computed(() => authState.user?.permission_names ?? []);
+const canView = computed(() => permissionNames.value.includes('email-log-list'));
+const canDelete = computed(() => permissionNames.value.includes('email-log-delete'));
+
+const emailLogToDelete = ref(null);
+const deleteLoading = ref(false);
+const deleteError = ref('');
+
+const emailLogDeleteModalOpen = computed({
+  get: () => emailLogToDelete.value != null,
+  set(isOpen) {
+    if (!isOpen && !deleteLoading.value) {
+      emailLogToDelete.value = null;
+      deleteError.value = '';
+    }
+  },
+});
+
+function onEmailLogsTableNotify({ text }) {
+  if (text) {
+    successToastRef.value?.show(text);
+  }
+}
+
+function confirmDelete(row) {
+  emailLogToDelete.value = row;
+  deleteError.value = '';
+}
+
+async function deleteEmailLog() {
+  if (!emailLogToDelete.value?.id) return;
+  deleteLoading.value = true;
+  deleteError.value = '';
+  const deletedId = emailLogToDelete.value.id;
+  try {
+    await axios.delete(`/api/email-logs/${deletedId}`);
+    emailLogToDelete.value = null;
+    if (detailOpen.value && detailId.value === deletedId) {
+      closeDetail();
+    }
+    await emailLogsTableRef.value?.refresh();
+    successToastRef.value?.show('Email log deleted successfully.');
+  } catch (e) {
+    deleteError.value = e.response?.data?.message ?? 'Failed to delete email log.';
+  } finally {
+    deleteLoading.value = false;
+  }
+}
+
+const detailOpen = ref(false);
+const detailId = ref(null);
+const detail = ref(null);
+const detailLoading = ref(false);
+const detailError = ref('');
 
 const detailBodyHtml = computed(() => {
   const raw = detail.value?.body;
@@ -62,12 +147,6 @@ const detailBodyHtml = computed(() => {
   }
   return DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
 });
-
-const detailOpen = ref(false);
-const detailId = ref(null);
-const detail = ref(null);
-const detailLoading = ref(false);
-const detailError = ref('');
 
 async function openDetail(id) {
   detailId.value = id;

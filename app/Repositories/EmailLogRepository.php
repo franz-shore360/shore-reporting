@@ -95,4 +95,26 @@ class EmailLogRepository implements EmailLogRepositoryInterface
             default => $query->orderBy('email_logs.id', $dir),
         };
     }
+
+    public function find(int $id): ?EmailLog
+    {
+        return $this->model->newQuery()->find($id);
+    }
+
+    public function delete(EmailLog $emailLog): bool
+    {
+        return (bool) $emailLog->delete();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function deleteByIds(array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        return $this->model->newQuery()->whereIn('id', $ids)->delete();
+    }
 }
