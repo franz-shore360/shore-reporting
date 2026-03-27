@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\DataTable\Definitions\RoleDataTableDefinition;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
+use App\Services\DataTableService;
+use App\Services\RoleService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -14,21 +18,33 @@ class RoleController extends Controller
     /** Role name that cannot be deleted. */
     public const ADMIN_ROLE_NAME = 'Admin';
 
-    public function __construct()
-    {
+    public function __construct(
+        protected RoleService $roleService,
+        protected DataTableService $dataTableService,
+    ) {
         $this->middleware('role:'.self::ADMIN_ROLE_NAME, ['only' => ['show', 'store', 'update', 'destroy']]);
     }
 
     /**
-     * List all roles (for dropdowns/filters).
+     * Paginated roles for the admin data grid.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $roles = Role::where('guard_name', self::GUARD_NAME)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $paginator = $this->dataTableService->paginate(
+            $request,
+            $this->roleService,
+            new RoleDataTableDefinition,
+        );
 
-        return response()->json($roles);
+        return response()->json($paginator);
+    }
+
+    /**
+     * All roles for dropdowns (user form, etc.).
+     */
+    public function options(): JsonResponse
+    {
+        return response()->json($this->roleService->listOptions());
     }
 
     /**

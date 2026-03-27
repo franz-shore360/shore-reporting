@@ -263,7 +263,7 @@ onMounted(async () => {
     departments.value = [];
   }
   try {
-    const { data } = await axios.get('/api/roles');
+    const { data } = await axios.get('/api/roles/options');
     roles.value = Array.isArray(data) ? data : [];
   } catch {
     roles.value = [];

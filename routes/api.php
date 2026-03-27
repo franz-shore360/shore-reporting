@@ -39,6 +39,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::apiResource('departments', DepartmentController::class);
 
     Route::get('permissions', [PermissionController::class, 'index']);
+    Route::get('roles/options', [RoleController::class, 'options']);
     Route::get('roles', [RoleController::class, 'index']);
     Route::apiResource('roles', RoleController::class)->except(['index'])->names([
         'store' => 'roles.store',

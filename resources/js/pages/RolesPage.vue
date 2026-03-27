@@ -14,40 +14,12 @@
       <p class="permission-message">You do not have permission to manage roles.</p>
     </div>
     <div v-else class="card table-card">
-      <DataTable
-        storage-key="roles"
-        :columns="roleColumns"
-        :data="roles"
-        :sortable="true"
-        :filterable="true"
-        :loading="rolesLoading"
-        :initial-sorting="rolesTableInitialSorting"
-      >
-        <template #cell="{ cell, value, row }">
-          <span v-if="cell.column.columnDef.accessorKey === 'actions'" class="actions-cell">
-            <button
-              v-if="row.original.name !== adminRoleName"
-              type="button"
-              class="btn btn-sm btn-outline btn-icon"
-              title="Edit"
-              @click="openEditModal(row.original)"
-            >
-              <GridIcon name="edit" />
-            </button>
-            <button
-              v-if="row.original.name !== adminRoleName"
-              type="button"
-              class="btn btn-sm btn-danger btn-icon"
-              title="Delete"
-              @click="confirmDelete(row.original)"
-            >
-              <GridIcon name="trash" />
-            </button>
-          </span>
-          <template v-else>{{ formatTableCellValue(cell.column.columnDef, value) }}</template>
-        </template>
-        <template #empty>No roles found.</template>
-      </DataTable>
+      <RolesTable
+        ref="rolesTableRef"
+        :can-fetch="canAccessRoles"
+        @edit="openEditModal"
+        @delete-request="confirmDelete"
+      />
     </div>
 
     <!-- Add/Edit Role Modal -->
@@ -117,18 +89,13 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { authState } from '../auth';
-import DataTable from '../components/DataTable.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
-import GridIcon from '../components/icons/GridIcons.vue';
+import RolesTable from '../components/RolesTable.vue';
 import SuccessToast from '../components/SuccessToast.vue';
-import { formatTableCellValue } from '../utils/date';
 
 const adminRoleName = 'Admin';
-/** Default grid sort: ID descending (matches Users/Departments). */
-const rolesTableInitialSorting = Object.freeze([{ id: 'id', desc: true }]);
 const canAccessRoles = computed(() => authState.user?.role_names?.includes('Admin') ?? false);
-const roles = ref([]);
-const rolesLoading = ref(false);
+const rolesTableRef = ref(null);
 const permissionGroups = ref(null);
 const showModal = ref(false);
 const editingRole = ref(null);
@@ -154,31 +121,6 @@ const form = reactive({
   permissions: [],
 });
 
-const roleColumns = [
-  {
-    accessorKey: 'id',
-    header: 'ID',
-    enableColumnFilter: true,
-    filterFn: 'includesString',
-    enableSorting: true,
-    sortingFn: 'basic',
-  },
-  { accessorKey: 'name', header: 'Name', enableColumnFilter: true, filterFn: 'includesString', enableSorting: true },
-  { accessorKey: 'actions', header: 'Actions', enableColumnFilter: false, enableHiding: false, enableSorting: false },
-];
-
-async function fetchRoles() {
-  rolesLoading.value = true;
-  try {
-    const { data } = await axios.get('/api/roles');
-    roles.value = data;
-  } catch (e) {
-    roles.value = [];
-  } finally {
-    rolesLoading.value = false;
-  }
-}
-
 async function fetchPermissions() {
   try {
     const { data } = await axios.get('/api/permissions');
@@ -190,7 +132,6 @@ async function fetchPermissions() {
 
 onMounted(() => {
   if (canAccessRoles.value) {
-    fetchRoles();
     fetchPermissions();
   }
 });
@@ -238,7 +179,7 @@ async function submitRole() {
       await axios.post('/api/roles', payload);
     }
     closeModal();
-    await fetchRoles();
+    await rolesTableRef.value?.refresh();
     successToastRef.value?.show(
       wasEditing ? 'Role updated successfully.' : 'Role added successfully.',
     );
@@ -266,7 +207,7 @@ async function deleteRole() {
   try {
     await axios.delete(`/api/roles/${roleToDelete.value.id}`);
     roleToDelete.value = null;
-    await fetchRoles();
+    await rolesTableRef.value?.refresh();
     successToastRef.value?.show('Role deleted successfully.');
   } catch (e) {
     deleteError.value = e.response?.data?.message ?? 'Failed to delete role.';
