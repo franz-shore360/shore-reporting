@@ -1,24 +1,12 @@
 <template>
-  <div class="dt-filter-panel">
-    <div class="dt-filter-panel-head">
-      <button
-        type="button"
-        class="dt-filter-panel-toggle"
-        :aria-expanded="expanded"
-        :aria-controls="panelBodyId"
-        :disabled="disabled"
-        @click="expanded = !expanded"
-      >
-        <span
-          class="dt-filter-panel-chevron"
-          :class="{ 'dt-filter-panel-chevron--open': expanded }"
-          aria-hidden="true"
-        />
-        Search Filters
-      </button>
-    </div>
-
-    <div v-show="expanded" :id="panelBodyId" class="dt-filter-panel-body">
+  <section
+    v-show="expanded"
+    :id="panelBodyId"
+    class="dt-filter-panel"
+    :aria-labelledby="panelTitleId"
+  >
+    <h2 :id="panelTitleId" class="dt-filter-panel-title">Search Filters</h2>
+    <div class="dt-filter-panel-body">
       <div class="dt-filter-panel-fields">
         <div v-for="f in fields" :key="f.id" class="dt-filter-panel-field">
           <label :for="inputId(f.id)">{{ f.label }}</label>
@@ -51,6 +39,14 @@
         <button type="button" class="btn btn-sm btn-secondary" :disabled="disabled" @click="clearForm">
           Clear
         </button>
+        <button
+          type="button"
+          class="btn btn-sm dt-filter-panel-close"
+          aria-label="Close search filters"
+          @click="emit('close')"
+        >
+          Close
+        </button>
       </div>
     </div>
 
@@ -65,7 +61,7 @@
               class="dt-filter-panel-chip-remove"
               :aria-label="'Remove ' + chipLabel(fl) + ' filter'"
               :disabled="disabled"
-              @click="emit('remove-filter', fl.id)"
+              @click="removeFilterChip(fl.id)"
             >
               ×
             </button>
@@ -73,13 +69,18 @@
         </li>
       </ul>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { reactive, computed, watch } from 'vue';
 
 const props = defineProps({
+  /** Controlled by DataTable toolbar Filter button. */
+  expanded: {
+    type: Boolean,
+    default: false,
+  },
   columns: {
     type: Array,
     required: true,
@@ -100,11 +101,13 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['apply', 'remove-filter']);
+const emit = defineEmits(['apply', 'remove-filter', 'close']);
 
-const expanded = ref(false);
+const idSafe = computed(() => props.idPrefix.replace(/\s+/g, '-'));
 
-const panelBodyId = computed(() => `dt-filter-panel-body-${props.idPrefix.replace(/\s+/g, '-')}`);
+const panelTitleId = computed(() => `dt-search-filters-title-${idSafe.value}`);
+
+const panelBodyId = computed(() => `dt-filter-panel-body-${idSafe.value}`);
 
 function columnIdFromDef(def) {
   if (def?.id != null) return String(def.id);
@@ -133,6 +136,14 @@ const fields = computed(() => {
 
 const draft = reactive({});
 
+/** Track prior applied ids so we clear draft when a filter is dropped without going through the chip. */
+let prevAppliedFilterIds = new Set();
+
+function appliedFiltersMap() {
+  const raw = Array.isArray(props.appliedFilters) ? props.appliedFilters : [];
+  return new Map(raw.map((f) => [String(f.id), String(f.value ?? '')]));
+}
+
 watch(
   fields,
   (list) => {
@@ -142,23 +153,51 @@ watch(
         delete draft[key];
       }
     }
+    const appliedById = appliedFiltersMap();
     for (const f of list) {
       if (draft[f.id] === undefined) {
-        draft[f.id] = '';
+        draft[f.id] = appliedById.has(f.id) ? appliedById.get(f.id) : '';
       }
     }
   },
   { immediate: true, deep: true },
 );
 
+watch(
+  () => props.appliedFilters,
+  () => {
+    const appliedById = appliedFiltersMap();
+    const nextIds = new Set(appliedById.keys());
+
+    for (const f of fields.value) {
+      if (appliedById.has(f.id)) {
+        draft[f.id] = appliedById.get(f.id);
+      }
+    }
+    for (const id of prevAppliedFilterIds) {
+      if (!nextIds.has(id) && fields.value.some((x) => x.id === id)) {
+        draft[id] = '';
+      }
+    }
+    prevAppliedFilterIds = nextIds;
+  },
+  { deep: true, immediate: true },
+);
+
 function inputId(columnId) {
-  return `dt-filter-panel-${props.idPrefix}-${columnId}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+  return `dt-filter-panel-${idSafe.value}-${columnId}`.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
 function chipLabel(f) {
   const meta = fields.value.find((x) => x.id === f.id);
   const title = meta?.label ?? f.id;
   return `${title}: ${f.value}`;
+}
+
+function removeFilterChip(columnId) {
+  const id = String(columnId);
+  draft[id] = '';
+  emit('remove-filter', id);
 }
 
 function applyFilters() {
@@ -188,46 +227,16 @@ defineExpose({
   border-bottom: 1px solid var(--color-border-light);
 }
 
-.dt-filter-panel-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border: none;
-  background: none;
-  font: inherit;
+.dt-filter-panel-title {
+  margin: 0 0 var(--space-3);
   font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
+  font-weight: 400;
+  line-height: inherit;
   color: var(--color-text);
-  cursor: pointer;
-}
-
-.dt-filter-panel-toggle:hover:not(:disabled) {
-  color: var(--color-primary, var(--color-text));
-}
-
-.dt-filter-panel-toggle:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.dt-filter-panel-chevron {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 6px solid var(--color-text-muted);
-  transform: rotate(-90deg);
-  transition: transform 0.15s ease;
-}
-
-.dt-filter-panel-chevron--open {
-  transform: rotate(0deg);
 }
 
 .dt-filter-panel-body {
-  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
 }
 
 .dt-filter-panel-fields {
@@ -262,18 +271,34 @@ defineExpose({
   gap: var(--space-2);
 }
 
+/* Same metrics as .btn-sm + .btn-secondary; distinct neutral fill so Close ≠ Clear */
+.dt-filter-panel-close {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.dt-filter-panel-close:hover:not(:disabled) {
+  background: var(--color-border-light);
+  color: var(--color-text);
+}
+
 .dt-filter-panel-active {
   margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border-light);
 }
 
+.dt-filter-panel-body + .dt-filter-panel-active {
+  margin-top: 0;
+  padding-top: var(--space-4);
+  border-top: none;
+}
+
 .dt-filter-panel-active-title {
   display: block;
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--color-text-muted);
   margin-bottom: var(--space-2);
 }

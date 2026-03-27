@@ -3,13 +3,16 @@
     <DataTableFilterPanel
       v-if="showFilterPanelLayout"
       ref="filterPanelRef"
+      :expanded="filterPanelLayoutExpanded"
       :columns="columns"
       :applied-filters="appliedFiltersForPanelLayout"
       :disabled="isTableBlocking"
       :id-prefix="storageKey || 'datatable'"
       @apply="onFilterPanelApply"
       @remove-filter="onFilterPanelRemoveFilter"
+      @close="filterPanelLayoutExpanded = false"
     />
+
     <div ref="stickyControlsRef" class="data-table-sticky-controls">
       <div
         v-if="showBulkActionBar"
@@ -50,6 +53,18 @@
         @click="commitTextFilters"
       >
         Apply Filters
+      </button>
+      <button
+        v-if="showFilterPanelLayout"
+        type="button"
+        class="btn btn-sm btn-outline"
+        :aria-expanded="filterPanelLayoutExpanded"
+        :aria-controls="filterPanelLayoutBodyId"
+        :aria-label="filterPanelLayoutExpanded ? 'Hide filters' : 'Show filters'"
+        :disabled="exportLoading"
+        @click="filterPanelLayoutExpanded = !filterPanelLayoutExpanded"
+      >
+        Filter
       </button>
       <button
         v-if="showReset"
@@ -1213,12 +1228,31 @@ const showFilterPanelLayout = computed(
   () => props.filterable && hasFilterableColumns.value && isFilterLayoutPanel.value,
 );
 
+const filterPanelLayoutExpanded = ref(false);
+
+const filterPanelLayoutBodyId = computed(
+  () => `dt-filter-panel-body-${(props.storageKey || 'datatable').replace(/\s+/g, '-')}`,
+);
+
 const appliedFiltersForPanelLayout = computed(() => {
   if (props.serverSide) {
     return Array.isArray(props.columnFilters) ? props.columnFilters : [];
   }
   return clientColumnFilters.value;
 });
+
+/** Show Search Filters when filters exist (e.g. restored from storage); keep closed if user cleared all. */
+watch(
+  () =>
+    showFilterPanelLayout.value ? appliedFiltersForPanelLayout.value.length : -1,
+  (len, prevLen) => {
+    if (len < 0) return;
+    if (len > 0 && (prevLen === undefined || prevLen <= 0)) {
+      filterPanelLayoutExpanded.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 function columnDefHasFilterSelect(def) {
   const opts = def?.filterOptions;
@@ -1287,7 +1321,12 @@ const showExport = computed(
 );
 
 const showToolbar = computed(
-  () => showPicker.value || showReset.value || showApplyFilters.value || showExport.value,
+  () =>
+    showPicker.value ||
+    showReset.value ||
+    showApplyFilters.value ||
+    showExport.value ||
+    showFilterPanelLayout.value,
 );
 
 function toggleColumnMenu() {
@@ -1341,6 +1380,7 @@ async function runExport(format) {
   if (!showExport.value) return;
   exportLoading.value = true;
   columnMenuOpen.value = false;
+  filterPanelLayoutExpanded.value = false;
   try {
     const base = props.buildExportQueryParams();
     const params = { ...(base && typeof base === 'object' ? base : {}), format };
@@ -1623,6 +1663,7 @@ function resetColumnVisibility() {
 function resetFiltersAndSort() {
   columnMenuOpen.value = false;
   exportMenuOpen.value = false;
+  filterPanelLayoutExpanded.value = false;
   if (isFilterLayoutPanel.value) {
     filterPanelRef.value?.clearForm();
   }
