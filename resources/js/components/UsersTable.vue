@@ -7,6 +7,7 @@
     :data="users"
     :sortable="true"
     :filterable="true"
+    filter-layout="panel"
     :initial-sorting="usersTableInitialSorting"
     server-side
     :loading="usersLoading"

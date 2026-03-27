@@ -1,5 +1,15 @@
 <template>
   <div ref="rootRef" class="data-table-root">
+    <DataTableFilterPanel
+      v-if="showFilterPanelLayout"
+      ref="filterPanelRef"
+      :columns="columns"
+      :applied-filters="appliedFiltersForPanelLayout"
+      :disabled="isTableBlocking"
+      :id-prefix="storageKey || 'datatable'"
+      @apply="onFilterPanelApply"
+      @remove-filter="onFilterPanelRemoveFilter"
+    />
     <div ref="stickyControlsRef" class="data-table-sticky-controls">
       <div
         v-if="showBulkActionBar"
@@ -286,7 +296,7 @@
               </div>
             </th>
           </tr>
-          <tr v-if="filterable && hasFilterableColumns" class="data-table-filter-row">
+          <tr v-if="filterable && hasFilterableColumns && !isFilterLayoutPanel" class="data-table-filter-row">
             <th v-if="rowSelectionEnabled" class="data-table-th data-table-th-filter data-table-th-select" />
             <th
               v-for="header in filterRowHeaders"
@@ -367,6 +377,7 @@ import {
   getFilteredRowModel,
 } from '@tanstack/vue-table';
 import axios from 'axios';
+import DataTableFilterPanel from './DataTableFilterPanel.vue';
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/date';
 
 const props = defineProps({
@@ -387,6 +398,22 @@ const props = defineProps({
   },
   /** Enable column filtering (columns must have enableColumnFilter: true) */
   filterable: {
+    type: Boolean,
+    default: false,
+  },
+  /**
+   * inline = filter row under headers (default). panel = collapsible Search Filters + active filter chips.
+   */
+  filterLayout: {
+    type: String,
+    default: 'inline',
+    validator: (v) => v === 'inline' || v === 'panel',
+  },
+  /**
+   * When true with server-side grids, Reset stays available even if filterable is false
+   * (parent manages filters outside the table, e.g. Users filter panel).
+   */
+  hasExternalFilters: {
     type: Boolean,
     default: false,
   },
@@ -738,6 +765,10 @@ function loadColumnFiltersFromStorageForClient() {
 
 /** Restore filters from cache once columns are known (client + server). */
 function syncColumnFiltersFromStorage() {
+  if (props.serverSide && !props.filterable) {
+    columnFiltersServerHydratedFromStorage.value = true;
+    return;
+  }
   if (!props.filterable || !props.storageKey) return;
   const defs = columnDefs.value;
   if (!getFilterableColumnIds(defs).length) return;
@@ -1176,6 +1207,19 @@ const hasFilterableColumns = computed(() =>
   columnDefs.value.some((col) => col.enableColumnFilter === true),
 );
 
+const isFilterLayoutPanel = computed(() => props.filterLayout === 'panel');
+
+const showFilterPanelLayout = computed(
+  () => props.filterable && hasFilterableColumns.value && isFilterLayoutPanel.value,
+);
+
+const appliedFiltersForPanelLayout = computed(() => {
+  if (props.serverSide) {
+    return Array.isArray(props.columnFilters) ? props.columnFilters : [];
+  }
+  return clientColumnFilters.value;
+});
+
 function columnDefHasFilterSelect(def) {
   const opts = def?.filterOptions;
   return Array.isArray(opts) && opts.length > 0;
@@ -1200,7 +1244,10 @@ const selectFilterColumnIds = computed(() =>
 const hasSelectColumnFilters = computed(() => selectFilterColumnIds.value.length > 0);
 
 const showApplyFilters = computed(
-  () => props.filterable && (hasTextColumnFilters.value || hasSelectColumnFilters.value),
+  () =>
+    props.filterable &&
+    !isFilterLayoutPanel.value &&
+    (hasTextColumnFilters.value || hasSelectColumnFilters.value),
 );
 
 const filterRowHeaders = computed(() => {
@@ -1218,12 +1265,15 @@ const showPicker = computed(
 
 /** Show Reset when enabled and the grid supports sorting and/or column filters */
 const showReset = computed(
-  () => props.showResetButton && (props.sortable || props.filterable),
+  () =>
+    props.showResetButton &&
+    (props.sortable || props.filterable || (props.serverSide && props.hasExternalFilters)),
 );
 
 const exportLoading = ref(false);
 const exportMenuOpen = ref(false);
 const exportPickerRootRef = ref(null);
+const filterPanelRef = ref(null);
 
 /** Data fetch or file export: same overlay and (server-side) pagination lock as loading. */
 const isTableBlocking = computed(() => props.loading || exportLoading.value);
@@ -1257,6 +1307,34 @@ function toggleExportMenu() {
 function selectExportFormat(format) {
   exportMenuOpen.value = false;
   runExport(format);
+}
+
+function onFilterPanelApply(filters) {
+  const next = Array.isArray(filters) ? filters : [];
+  if (props.serverSide) {
+    emit('update:columnFilters', next);
+    const pageSize = Number(props.pagination?.pageSize) || 25;
+    emit('update:pagination', { ...(props.pagination || {}), pageIndex: 0, pageSize });
+  } else {
+    clientColumnFilters.value = next;
+  }
+}
+
+function onFilterPanelRemoveFilter(columnId) {
+  const id = String(columnId);
+  const src = props.serverSide
+    ? Array.isArray(props.columnFilters)
+      ? props.columnFilters
+      : []
+    : clientColumnFilters.value;
+  const next = src.filter((f) => String(f.id) !== id);
+  if (props.serverSide) {
+    emit('update:columnFilters', next);
+    const pageSize = Number(props.pagination?.pageSize) || 25;
+    emit('update:pagination', { ...(props.pagination || {}), pageIndex: 0, pageSize });
+  } else {
+    clientColumnFilters.value = next;
+  }
 }
 
 async function runExport(format) {
@@ -1545,6 +1623,9 @@ function resetColumnVisibility() {
 function resetFiltersAndSort() {
   columnMenuOpen.value = false;
   exportMenuOpen.value = false;
+  if (isFilterLayoutPanel.value) {
+    filterPanelRef.value?.clearForm();
+  }
   if (props.serverSide) {
     emit('server-reset');
     return;
@@ -1621,6 +1702,7 @@ function setSelectFilterDraft(columnId, value) {
 
 function commitTextFilters() {
   if (!props.filterable) return;
+  if (isFilterLayoutPanel.value) return;
   if (!textFilterColumnIds.value.length && !selectFilterColumnIds.value.length) return;
 
   const next = [];
