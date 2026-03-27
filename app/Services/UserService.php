@@ -285,4 +285,19 @@ class UserService implements DataTableQueryable
             'skipped_missing' => $skippedMissing,
         ];
     }
+
+    /**
+     * Update department_id for many users (null clears department).
+     *
+     * @param  array<int, int>  $userIds
+     */
+    public function updateDepartmentForUsers(array $userIds, ?int $departmentId): int
+    {
+        $ids = array_values(array_unique(array_map('intval', $userIds)));
+        if ($ids === []) {
+            return 0;
+        }
+
+        return User::query()->whereIn('id', $ids)->update(['department_id' => $departmentId]);
+    }
 }

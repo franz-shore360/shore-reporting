@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\DataTable\Definitions\UserDataTableDefinition;
+use App\Http\Requests\BulkUpdateUsersDepartmentRequest;
 use App\Http\Requests\BulkDestroyUsersRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -23,7 +24,7 @@ class UserController extends Controller
     ) {
         $this->middleware('permission:user-list', ['only' => ['index', 'show', 'export']]);
         $this->middleware('permission:user-create', ['only' => ['store']]);
-        $this->middleware('permission:user-edit', ['only' => ['update']]);
+        $this->middleware('permission:user-edit', ['only' => ['update', 'bulkUpdateDepartment']]);
         $this->middleware('permission:user-delete', ['only' => ['destroy', 'bulkDestroy']]);
     }
 
@@ -158,5 +159,21 @@ class UserController extends Controller
         $result = $this->userService->deleteUsers($ids, $authId);
 
         return response()->json($result);
+    }
+
+    /**
+     * Update department for many users (or clear department when department_id is null).
+     */
+    public function bulkUpdateDepartment(BulkUpdateUsersDepartmentRequest $request): JsonResponse
+    {
+        /** @var array<int, int> $ids */
+        $ids = $request->validated('ids');
+        $departmentId = $request->validated('department_id');
+
+        $updated = $this->userService->updateDepartmentForUsers($ids, $departmentId);
+
+        return response()->json([
+            'updated' => $updated,
+        ]);
     }
 }

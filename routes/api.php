@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::post('users/bulk-destroy', [UserController::class, 'bulkDestroy']);
+    Route::post('users/bulk-update-department', [UserController::class, 'bulkUpdateDepartment']);
     Route::get('users/export', [UserController::class, 'export']);
     Route::apiResource('users', UserController::class);
     Route::get('departments/options', [DepartmentController::class, 'options']);

@@ -16,7 +16,7 @@
     :pagination="tablePagination"
     :sorting="tableSorting"
     :column-filters="tableColumnFilters"
-    :row-selection-enabled="canDelete"
+    :row-selection-enabled="rowSelectionEnabled"
     :bulk-actions="bulkActions"
     :is-row-selectable="isUserRowSelectable"
     @update:pagination="onPaginationUpdate"
@@ -77,6 +77,28 @@
   </DataTable>
 
   <ConfirmModal
+    v-model:open="bulkUpdateDepartmentModalOpen"
+    title="Update Department"
+    variant="primary"
+    :show-icon="false"
+    :confirm-label="bulkUpdateDepartmentLoading ? 'Updating…' : 'Update'"
+    cancel-label="Cancel"
+    :loading="bulkUpdateDepartmentLoading"
+    @confirm="executeBulkUpdateDepartment"
+  >
+    <p>
+      Update department for <strong>{{ bulkUpdateDepartmentPendingCount }} user(s)</strong>:
+    </p>
+    <div class="bulk-update-dept-field">
+      <label class="bulk-update-dept-label" for="bulk_update_dept">Department</label>
+      <select id="bulk_update_dept" v-model="bulkUpdateDepartmentId" class="bulk-update-dept-select">
+        <option value="">No Department</option>
+        <option v-for="d in departments" :key="d.id" :value="String(d.id)">{{ d.name }}</option>
+      </select>
+    </div>
+  </ConfirmModal>
+
+  <ConfirmModal
     v-model:open="bulkDeleteModalOpen"
     title="Delete Users"
     :confirm-label="bulkDeleteLoading ? 'Deleting…' : 'Delete Users'"
@@ -132,9 +154,15 @@ const emit = defineEmits(['edit', 'delete-request', 'notify']);
 
 const dataTableRef = ref(null);
 
+const rowSelectionEnabled = computed(() => props.canDelete || props.canEdit);
+
 /** Pending bulk-delete ids when confirmation modal is open. */
 const bulkDeleteIds = ref(null);
 const bulkDeleteLoading = ref(false);
+
+const bulkUpdateDepartmentIds = ref(null);
+const bulkUpdateDepartmentId = ref('');
+const bulkUpdateDepartmentLoading = ref(false);
 
 const bulkDeleteModalOpen = computed({
   get: () => Array.isArray(bulkDeleteIds.value) && bulkDeleteIds.value.length > 0,
@@ -149,8 +177,25 @@ const bulkDeletePendingCount = computed(() =>
   Array.isArray(bulkDeleteIds.value) ? bulkDeleteIds.value.length : 0,
 );
 
+const bulkUpdateDepartmentModalOpen = computed({
+  get: () => Array.isArray(bulkUpdateDepartmentIds.value) && bulkUpdateDepartmentIds.value.length > 0,
+  set(isOpen) {
+    if (!isOpen && !bulkUpdateDepartmentLoading.value) {
+      bulkUpdateDepartmentIds.value = null;
+      bulkUpdateDepartmentId.value = '';
+    }
+  },
+});
+
+const bulkUpdateDepartmentPendingCount = computed(() =>
+  Array.isArray(bulkUpdateDepartmentIds.value) ? bulkUpdateDepartmentIds.value.length : 0,
+);
+
 const bulkActions = computed(() => {
   const actions = [];
+  if (props.canEdit) {
+    actions.push({ value: 'update_department', label: 'Update Department…' });
+  }
   if (props.canDelete) {
     actions.push({ value: 'delete', label: 'Delete selected' });
   }
@@ -159,13 +204,19 @@ const bulkActions = computed(() => {
 
 function isUserRowSelectable(row) {
   const id = row?.original?.id;
-  return id != null && id !== authState.user?.id;
+  return id != null;
 }
 
 async function onBulkAction({ action, ids }) {
   if (!ids?.length) return;
 
   switch (action) {
+    case 'update_department': {
+      if (!props.canEdit || !ids?.length) return;
+      bulkUpdateDepartmentId.value = '';
+      bulkUpdateDepartmentIds.value = [...ids.map(String)];
+      break;
+    }
     case 'delete': {
       if (!props.canDelete || !ids?.length) return;
       bulkDeleteIds.value = [...ids.map(String)];
@@ -173,6 +224,39 @@ async function onBulkAction({ action, ids }) {
     }
     default:
       break;
+  }
+}
+
+async function executeBulkUpdateDepartment() {
+  const ids = bulkUpdateDepartmentIds.value;
+  if (!ids?.length || !props.canEdit) return;
+  bulkUpdateDepartmentLoading.value = true;
+  try {
+    const departmentId =
+      bulkUpdateDepartmentId.value === '' || bulkUpdateDepartmentId.value == null
+        ? null
+        : Number(bulkUpdateDepartmentId.value);
+    const { data } = await axios.post('/api/users/bulk-update-department', {
+      ids: ids.map((id) => Number(id)),
+      department_id: departmentId,
+    });
+    bulkUpdateDepartmentIds.value = null;
+    bulkUpdateDepartmentId.value = '';
+    dataTableRef.value?.clearRowSelection();
+    await fetchUsers();
+    emit('notify', {
+      text: `Department updated for ${data.updated ?? 0} user(s).`,
+    });
+  } catch (e) {
+    const msg = e.response?.data?.message ?? 'Bulk update failed.';
+    if (e.response?.status === 422 && e.response?.data?.errors) {
+      const err = e.response.data.errors;
+      emit('notify', { text: Object.values(err).flat().join(' ') || msg });
+    } else {
+      emit('notify', { text: msg });
+    }
+  } finally {
+    bulkUpdateDepartmentLoading.value = false;
   }
 }
 
@@ -409,3 +493,31 @@ defineExpose({
   refresh: fetchUsers,
 });
 </script>
+
+<style scoped>
+.bulk-update-dept-field {
+  margin-top: var(--space-4);
+}
+.bulk-update-dept-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+.bulk-update-dept-select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  padding-right: 2.5rem;
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+}
+</style>
