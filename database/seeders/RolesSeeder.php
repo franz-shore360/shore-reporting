@@ -9,7 +9,8 @@ use Spatie\Permission\Models\Role;
 class RolesSeeder extends Seeder
 {
     /**
-     * Create the Admin role and assign it to all existing users.
+     * Ensure the Admin role exists. If any user already has Admin, do nothing.
+     * Otherwise assign Admin to the first user (by id) who has no roles at all.
      *
      * @return void
      */
@@ -19,10 +20,17 @@ class RolesSeeder extends Seeder
             ['name' => 'Admin', 'guard_name' => 'web']
         );
 
-        User::query()->each(function (User $user) use ($adminRole): void {
-            if (! $user->hasRole($adminRole)) {
-                $user->assignRole($adminRole);
-            }
-        });
+        if (User::role('Admin')->exists()) {
+            return;
+        }
+
+        $user = User::query()
+            ->whereDoesntHave('roles')
+            ->orderBy('id')
+            ->first();
+
+        if ($user !== null) {
+            $user->assignRole($adminRole);
+        }
     }
 }
