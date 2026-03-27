@@ -15,6 +15,7 @@
         "vue-router": "^4.2.0"
     },
     "dependencies": {
-        "@tanstack/vue-table": "^8.21.3"
+        "@tanstack/vue-table": "^8.21.3",
+        "dompurify": "^3.3.3"
     }
 }

@@ -18,7 +18,7 @@
     </div>
 
     <div v-if="detailOpen" class="modal-backdrop" @click.self="closeDetail">
-      <div class="modal modal--wide email-log-detail-modal">
+      <div class="modal email-log-detail-modal">
         <div class="modal-header">
           <h2 class="modal-title">Email Details</h2>
           <button type="button" class="modal-close" aria-label="Close" @click="closeDetail">&times;</button>
@@ -34,9 +34,9 @@
             <div v-if="detail.bcc_addresses"><dt>Bcc</dt><dd class="email-logs-cell-wrap">{{ detail.bcc_addresses }}</dd></div>
             <div><dt>Subject</dt><dd class="email-logs-cell-wrap">{{ detail.subject || '—' }}</dd></div>
           </dl>
-          <div v-if="detail.body" class="email-log-body-block">
+          <div v-if="detailBodyHtml" class="email-log-body-block">
             <h3 class="email-log-body-heading">Body</h3>
-            <pre class="email-log-pre email-log-pre--body">{{ detail.body }}</pre>
+            <div class="email-log-html-body" v-html="detailBodyHtml" />
           </div>
           <p v-else class="muted">No body stored for this message.</p>
         </div>
@@ -48,11 +48,20 @@
 <script setup>
 import { ref, computed } from 'vue';
 import axios from 'axios';
+import DOMPurify from 'dompurify';
 import { authState } from '../auth';
 import { formatDateTimeDisplay } from '../utils/date';
 import EmailLogsTable from '../components/EmailLogsTable.vue';
 
 const canView = computed(() => (authState.user?.permission_names ?? []).includes('email-log-list'));
+
+const detailBodyHtml = computed(() => {
+  const raw = detail.value?.body;
+  if (raw == null || typeof raw !== 'string' || raw.trim() === '') {
+    return '';
+  }
+  return DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
+});
 
 const detailOpen = ref(false);
 const detailId = ref(null);
@@ -106,12 +115,25 @@ function closeDetail() {
   white-space: normal;
   word-break: break-word;
 }
+.email-log-detail-modal {
+  max-width: min(56rem, 100%);
+}
 .email-log-detail-modal .modal-header {
   margin-bottom: var(--space-3);
 }
+.email-log-detail-modal .email-logs-cell-wrap {
+  max-width: none;
+}
 .email-log-detail-body {
-  max-height: min(70vh, 40rem);
+  max-height: min(78vh, 48rem);
   overflow: auto;
+  padding: 0 var(--space-6) var(--space-6);
+}
+.email-log-detail-modal > .email-logs-loading {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+.email-log-detail-modal > .form-error {
+  margin: 0 var(--space-6) var(--space-6);
 }
 .email-log-meta {
   margin: 0 0 var(--space-4);
@@ -137,18 +159,35 @@ function closeDetail() {
   font-weight: var(--font-semibold);
   color: var(--color-text-muted);
 }
-.email-log-pre {
+.email-log-html-body {
   margin: 0;
   padding: var(--space-3);
   background: var(--color-surface-hover);
+  color: var(--color-text);
   border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 16rem;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  max-height: min(50vh, 32rem);
   overflow: auto;
+  word-break: break-word;
 }
-.email-log-pre--body {
-  max-height: 24rem;
+/* HTML email almost always targets a light page; dark app theme would hide that contrast */
+[data-theme='dark'] .email-log-html-body {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid var(--color-border);
+}
+[data-theme='dark'] .email-log-html-body :deep(a) {
+  color: #0369a1;
+}
+[data-theme='dark'] .email-log-html-body :deep(a:visited) {
+  color: #6d28d9;
+}
+.email-log-html-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+}
+.email-log-html-body :deep(table) {
+  max-width: 100%;
 }
 </style>
