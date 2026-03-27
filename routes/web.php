@@ -3,7 +3,6 @@
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,4 +37,4 @@ Route::get('/', function () {
 
 Route::get('/{path}', function () {
     return view('spa');
-})->where('path', 'login|home|profile|users|departments|roles|forgot-password|reset-password');
+})->where('path', 'login|home|profile|users|departments|roles|forgot-password|reset-password|logs/email');

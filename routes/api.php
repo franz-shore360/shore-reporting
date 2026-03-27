@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\EmailLogController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -27,6 +28,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+
+    Route::get('email-logs/export', [EmailLogController::class, 'export']);
+    Route::get('email-logs', [EmailLogController::class, 'index']);
+    Route::get('email-logs/{email_log}', [EmailLogController::class, 'show']);
 
     /*
     |--------------------------------------------------------------------------

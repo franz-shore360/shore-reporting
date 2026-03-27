@@ -20,6 +20,30 @@
         <router-link :to="{ name: 'user-manager' }" @click="mobileMenuOpen = false">Users</router-link>
         <router-link v-if="hasAdminRole" :to="{ name: 'roles' }" @click="mobileMenuOpen = false">Roles</router-link>
         <router-link v-if="hasDepartmentList" :to="{ name: 'departments' }" @click="mobileMenuOpen = false">Departments</router-link>
+        <div v-if="hasEmailLogList" class="account-dropdown" ref="logsDropdownRef">
+          <button
+            type="button"
+            class="account-dropdown-trigger btn btn-ghost btn-sm"
+            :class="{ 'account-dropdown-trigger--active': logsOpen }"
+            aria-haspopup="true"
+            :aria-expanded="logsOpen"
+            aria-label="Logs menu"
+            @click="logsOpen = !logsOpen"
+          >
+            Logs
+            <span class="account-dropdown-chevron">▼</span>
+          </button>
+          <div v-show="logsOpen" class="account-dropdown-menu" role="menu">
+            <router-link
+              :to="{ name: 'email-logs' }"
+              class="account-dropdown-item"
+              role="menuitem"
+              @click="logsOpen = false; mobileMenuOpen = false"
+            >
+              Email Logs
+            </router-link>
+          </div>
+        </div>
         <div class="account-dropdown" ref="accountDropdownRef">
           <button
             type="button"
@@ -84,6 +108,7 @@
         <router-link :to="{ name: 'user-manager' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Users</router-link>
         <router-link v-if="hasAdminRole" :to="{ name: 'roles' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Roles</router-link>
         <router-link v-if="hasDepartmentList" :to="{ name: 'departments' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Departments</router-link>
+        <router-link v-if="hasEmailLogList" :to="{ name: 'email-logs' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Email Logs</router-link>
         <router-link :to="{ name: 'profile' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Edit Profile</router-link>
         <button type="button" class="app-nav-mobile-link app-nav-mobile-link--logout" :disabled="logoutLoading" @click="handleLogout">
           {{ logoutLoading ? 'Logging Out…' : 'Log Out' }}
@@ -116,6 +141,8 @@ const { theme, toggleTheme } = useTheme();
 
 const accountOpen = ref(false);
 const accountDropdownRef = ref(null);
+const logsOpen = ref(false);
+const logsDropdownRef = ref(null);
 const navRef = ref(null);
 const mobileMenuOpen = ref(false);
 const logoutLoading = ref(false);
@@ -123,6 +150,9 @@ const logoutLoading = ref(false);
 const hasAdminRole = computed(() => authState.user?.role_names?.includes('Admin') ?? false);
 const hasDepartmentList = computed(() =>
   (authState.user?.permission_names ?? []).includes('department-list'),
+);
+const hasEmailLogList = computed(() =>
+  (authState.user?.permission_names ?? []).includes('email-log-list'),
 );
 
 const userDisplayName = computed(() => authState.user?.full_name?.trim() || 'User');
@@ -143,6 +173,7 @@ watch(
   (authenticated) => {
     if (!authenticated) {
       accountOpen.value = false;
+      logsOpen.value = false;
       mobileMenuOpen.value = false;
     }
   },
@@ -151,6 +182,9 @@ watch(
 function handleClickOutside(event) {
   if (accountDropdownRef.value && !accountDropdownRef.value.contains(event.target)) {
     accountOpen.value = false;
+  }
+  if (logsDropdownRef.value && !logsDropdownRef.value.contains(event.target)) {
+    logsOpen.value = false;
   }
   if (navRef.value && !navRef.value.contains(event.target)) {
     mobileMenuOpen.value = false;

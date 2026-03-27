@@ -26,4 +26,10 @@ return [
             'department-delete' => ['label' => 'Delete Department'],
         ],
     ],
+    'logs' => [
+        'name' => 'Logs',
+        'permissions' => [
+            'email-log-list' => ['label' => 'View Email Logs'],
+        ],
+    ],
 ];

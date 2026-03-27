@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Repositories\Interfaces\DepartmentRepositoryInterface;
+use App\Repositories\Interfaces\EmailLogRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\DepartmentRepository;
+use App\Repositories\EmailLogRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -28,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             DepartmentRepositoryInterface::class,
             DepartmentRepository::class
+        );
+        $this->app->bind(
+            EmailLogRepositoryInterface::class,
+            EmailLogRepository::class
         );
     }
 
