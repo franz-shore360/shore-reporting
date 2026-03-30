@@ -1,7 +1,10 @@
 <template>
   <div class="app-layout" :class="{ 'app-layout--guest': !authState.isAuthenticated }">
     <header v-if="authState.isAuthenticated" class="app-nav" :class="{ 'app-nav--open': mobileMenuOpen }" ref="navRef">
-      <router-link :to="{ name: 'home' }" class="app-nav-brand" @click="mobileMenuOpen = false">Shore Reporting</router-link>
+      <router-link :to="{ name: 'home' }" class="app-nav-brand" @click="mobileMenuOpen = false">
+        <img src="/images/shore-reporting-logo.svg" alt="" class="app-nav-brand-logo" width="32" height="32" />
+        <span class="app-nav-brand-text">Shore Reporting</span>
+      </router-link>
 
       <button
         type="button"

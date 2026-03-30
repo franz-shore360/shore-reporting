@@ -12,6 +12,13 @@
     </button>
     <div class="auth-flow-card card card--split">
       <div class="card-header">
+        <img
+          src="/images/shore-reporting-logo.svg"
+          alt=""
+          class="auth-flow-brand-logo"
+          width="48"
+          height="48"
+        />
         <h1 class="auth-flow-app-title">{{ appName }}</h1>
       </div>
       <div class="card-body">
@@ -109,6 +116,11 @@ async function submit() {
 }
 .theme-toggle-login-label {
   margin-left: var(--space-1);
+}
+.auth-flow-brand-logo {
+  display: block;
+  margin: 0 auto var(--space-4);
+  border-radius: var(--radius-md);
 }
 .auth-flow-app-title {
   font-size: var(--text-2xl);

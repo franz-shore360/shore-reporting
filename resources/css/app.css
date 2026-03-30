@@ -131,11 +131,24 @@ select {
 }
 
 .app-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
   font-size: var(--text-xl);
   font-weight: var(--font-bold);
   color: var(--color-text);
   text-decoration: none;
   letter-spacing: -0.02em;
+}
+.app-nav-brand-logo {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  display: block;
+}
+.app-nav-brand-text {
+  line-height: 1.2;
 }
 
 .app-nav-links {

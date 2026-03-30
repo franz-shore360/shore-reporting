@@ -5,6 +5,9 @@
 @section('content')
 <div class="container" style="padding-top: 4rem;">
     <div class="card">
+        <div class="text-center mb-4">
+            <img src="{{ asset('images/shore-reporting-logo.svg') }}" alt="Shore Reporting" width="48" height="48" style="display: inline-block; border-radius: 0.5rem;" />
+        </div>
         <h1 class="text-center mb-4" style="font-size: 1.5rem; color: #111827;">Sign In</h1>
 
         @if ($errors->any())

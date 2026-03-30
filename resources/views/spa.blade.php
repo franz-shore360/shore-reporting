@@ -9,6 +9,9 @@
 
     <title>{{ config('app.name') }}</title>
 
+    <link rel="icon" href="{{ asset('images/shore-reporting-logo.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('images/shore-reporting-logo.svg') }}">
+
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script>

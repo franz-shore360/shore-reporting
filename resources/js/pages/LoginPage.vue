@@ -12,6 +12,13 @@
     </button>
     <div class="login-card card card--split">
       <div class="card-header">
+        <img
+          src="/images/shore-reporting-logo.svg"
+          alt=""
+          class="login-brand-logo"
+          width="48"
+          height="48"
+        />
         <h1 class="login-app-title">{{ appName }}</h1>
       </div>
       <div class="card-body">
@@ -135,6 +142,11 @@ async function submit() {
 }
 .theme-toggle-login-label {
   margin-left: var(--space-1);
+}
+.login-brand-logo {
+  display: block;
+  margin: 0 auto var(--space-4);
+  border-radius: var(--radius-md);
 }
 .login-app-title {
   font-size: var(--text-2xl);

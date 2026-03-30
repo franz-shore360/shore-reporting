@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="sr-logo-bg" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#sr-logo-bg)"/>
+  <rect x="7" y="17" width="4" height="8" rx="1" fill="#fff" fill-opacity="0.92"/>
+  <rect x="14" y="13" width="4" height="12" rx="1" fill="#fff"/>
+  <rect x="21" y="9" width="4" height="16" rx="1" fill="#fff" fill-opacity="0.92"/>
+  <path d="M5 26.5c2.8-1.2 5.5-1.2 8.3 0s5.5 1.2 8.3 0 5.5-1.2 8.3 0" stroke="#e0f2fe" stroke-width="1.25" fill="none" stroke-linecap="round"/>
+</svg>
