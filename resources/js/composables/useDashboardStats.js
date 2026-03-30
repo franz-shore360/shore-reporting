@@ -36,6 +36,9 @@ export function useDashboardStats() {
         departmentsCount.value = null;
       } finally {
         loading.value = false;
+        // Allow a new fetch when the user returns to the dashboard (widgets remount).
+        // Concurrent calls on the same visit still share this promise until it settles.
+        loadPromise = null;
       }
     })();
     return loadPromise;
