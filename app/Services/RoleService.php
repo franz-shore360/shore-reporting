@@ -6,7 +6,7 @@ use App\Contracts\DataTable\DataTableQueryable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 
 class RoleService implements DataTableQueryable
 {
@@ -25,7 +25,7 @@ class RoleService implements DataTableQueryable
         $query = $this->newDataTableQuery($filters);
         $this->applyDataTableOrder($query, $sort, $direction);
 
-        return $query->paginate($perPage, ['id', 'name'], 'page', $page);
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**
@@ -39,10 +39,11 @@ class RoleService implements DataTableQueryable
         $query = $this->newDataTableQuery($filters);
         $this->applyDataTableOrder($query, $sort, $direction);
 
-        foreach ($query->cursor(['id', 'name']) as $role) {
+        foreach ($query->cursor() as $role) {
             yield [
                 'id' => $role->id,
                 'name' => $role->name,
+                'users_count' => (int) ($role->users_count ?? 0),
             ];
         }
     }
@@ -53,7 +54,9 @@ class RoleService implements DataTableQueryable
      */
     protected function newDataTableQuery(array $filters): Builder
     {
-        $query = Role::query()->where('guard_name', self::GUARD_NAME);
+        $query = Role::query()
+            ->where('guard_name', self::GUARD_NAME)
+            ->withCount('users');
 
         $id = isset($filters['id']) ? trim((string) $filters['id']) : '';
         if ($id !== '') {
@@ -75,13 +78,15 @@ class RoleService implements DataTableQueryable
     {
         $dir = $direction === 'desc' ? 'desc' : 'asc';
 
-        $allowedSorts = ['id', 'name'];
+        $allowedSorts = ['id', 'name', 'users_count'];
         if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'id';
         }
 
         if ($sort === 'name') {
             $query->orderBy('name', $dir)->orderBy('id', 'desc');
+        } elseif ($sort === 'users_count') {
+            $query->orderBy('users_count', $dir)->orderBy('id', 'desc');
         } else {
             $query->orderBy('id', $dir);
         }

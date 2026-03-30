@@ -37,6 +37,7 @@ final class RoleDataTableDefinition implements DataTableDefinition
         return [
             'id' => 'ID',
             'name' => 'Name',
+            'users_count' => 'Users',
         ];
     }
 }

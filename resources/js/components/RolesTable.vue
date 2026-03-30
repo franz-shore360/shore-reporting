@@ -108,6 +108,13 @@ const roleColumns = computed(() => {
       filterFn: 'includesString',
       enableSorting: true,
     },
+    {
+      accessorKey: 'users_count',
+      header: 'Users',
+      enableColumnFilter: false,
+      enableSorting: true,
+      sortingFn: 'basic',
+    },
   ];
   if (props.canEdit || props.canDelete) {
     base.push({
