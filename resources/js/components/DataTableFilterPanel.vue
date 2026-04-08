@@ -1,56 +1,67 @@
 <template>
-  <section
-    v-show="expanded"
-    :id="panelBodyId"
-    class="dt-filter-panel"
-    :aria-labelledby="panelTitleId"
+  <div
+    class="dt-filter-panel-root"
+    :class="{ 'dt-filter-panel-root--separated': expanded || appliedFilters.length > 0 }"
   >
-    <h2 :id="panelTitleId" class="dt-filter-panel-title">Search Filters</h2>
-    <div class="dt-filter-panel-body">
-      <div class="dt-filter-panel-fields">
-        <div v-for="f in fields" :key="f.id" class="dt-filter-panel-field">
-          <label :for="inputId(f.id)">{{ f.label }}</label>
-          <select
-            v-if="f.select"
-            :id="inputId(f.id)"
-            v-model="draft[f.id]"
-            :disabled="disabled"
+    <!-- Collapsible: form only. Close hides this block, not active filter chips. -->
+    <section
+      v-show="expanded"
+      :id="panelBodyId"
+      class="dt-filter-panel dt-filter-panel-search"
+      :aria-labelledby="panelTitleId"
+    >
+      <h2 :id="panelTitleId" class="dt-filter-panel-title">Search Filters</h2>
+      <div class="dt-filter-panel-body">
+        <div class="dt-filter-panel-fields">
+          <div v-for="f in fields" :key="f.id" class="dt-filter-panel-field">
+            <label :for="inputId(f.id)">{{ f.label }}</label>
+            <select
+              v-if="f.select"
+              :id="inputId(f.id)"
+              v-model="draft[f.id]"
+              :disabled="disabled"
+            >
+              <option value="">Any</option>
+              <option v-for="opt in f.options" :key="String(opt.value)" :value="String(opt.value)">
+                {{ opt.label }}
+              </option>
+            </select>
+            <input
+              v-else
+              :id="inputId(f.id)"
+              v-model="draft[f.id]"
+              type="text"
+              autocomplete="off"
+              :disabled="disabled"
+              :placeholder="'Filter by ' + f.label"
+            />
+          </div>
+        </div>
+        <div class="dt-filter-panel-actions">
+          <button type="button" class="btn btn-sm btn-primary" :disabled="disabled" @click="applyFilters">
+            Apply Filters
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" :disabled="disabled" @click="clearForm">
+            Clear
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm dt-filter-panel-close"
+            aria-label="Close search filters"
+            @click="emit('close')"
           >
-            <option value="">Any</option>
-            <option v-for="opt in f.options" :key="String(opt.value)" :value="String(opt.value)">
-              {{ opt.label }}
-            </option>
-          </select>
-          <input
-            v-else
-            :id="inputId(f.id)"
-            v-model="draft[f.id]"
-            type="text"
-            autocomplete="off"
-            :disabled="disabled"
-            :placeholder="'Filter by ' + f.label"
-          />
+            Close
+          </button>
         </div>
       </div>
-      <div class="dt-filter-panel-actions">
-        <button type="button" class="btn btn-sm btn-primary" :disabled="disabled" @click="applyFilters">
-          Apply Filters
-        </button>
-        <button type="button" class="btn btn-sm btn-secondary" :disabled="disabled" @click="clearForm">
-          Clear
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm dt-filter-panel-close"
-          aria-label="Close search filters"
-          @click="emit('close')"
-        >
-          Close
-        </button>
-      </div>
-    </div>
+    </section>
 
-    <div v-if="appliedFilters.length > 0" class="dt-filter-panel-active" aria-label="Active filters">
+    <section
+      v-if="appliedFilters.length > 0"
+      class="dt-filter-panel-active"
+      :class="{ 'dt-filter-panel-active--below-search': expanded }"
+      aria-label="Active filters"
+    >
       <span class="dt-filter-panel-active-title">Active Filters</span>
       <ul class="dt-filter-panel-active-list" role="list">
         <li v-for="fl in appliedFilters" :key="fl.id" class="dt-filter-panel-active-item">
@@ -68,8 +79,8 @@
           </span>
         </li>
       </ul>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>
 
 <script setup>
@@ -221,10 +232,14 @@ defineExpose({
 </script>
 
 <style scoped>
-.dt-filter-panel {
+.dt-filter-panel-root--separated {
   margin-bottom: var(--space-4);
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border-light);
+}
+
+.dt-filter-panel-search {
+  padding-bottom: var(--space-3);
 }
 
 .dt-filter-panel-title {
@@ -236,7 +251,7 @@ defineExpose({
 }
 
 .dt-filter-panel-body {
-  padding-bottom: var(--space-3);
+  padding-bottom: 0;
 }
 
 .dt-filter-panel-fields {
@@ -283,16 +298,11 @@ defineExpose({
   color: var(--color-text);
 }
 
-.dt-filter-panel-active {
+/* Divider only when Search Filters block is visible (expanded); hidden search = chips align under toolbar */
+.dt-filter-panel-active--below-search {
   margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border-light);
-}
-
-.dt-filter-panel-body + .dt-filter-panel-active {
-  margin-top: 0;
-  padding-top: var(--space-4);
-  border-top: none;
 }
 
 .dt-filter-panel-active-title {
