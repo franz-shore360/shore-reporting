@@ -35,6 +35,13 @@ Route::get('/', function () {
     return view('spa');
 });
 
-Route::get('/{path}', function () {
+/*
+| SPA shell for Vue Router (history mode). Register explicit GET routes above this line.
+| Excludes: /api/* (JSON API), /sanctum/* (CSRF cookie), /up (Laravel health).
+*/
+Route::get('/{spa}', function () {
     return view('spa');
-})->where('path', 'login|home|profile|users|departments|roles|forgot-password|reset-password|logs/email');
+})->where(
+    'spa',
+    '^(?!(?:api|sanctum)(?:/|$)|up$).+$',
+);
