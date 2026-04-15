@@ -11,6 +11,15 @@ class StoreImportRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        $user = $this->user();
+        if ($user === null || ! $user->can('import-create')) {
+            return false;
+        }
+
+        if ($this->input('entity_type') === Import::ENTITY_DEPARTMENT) {
+            return $user->can('department-import');
+        }
+
         return true;
     }
 

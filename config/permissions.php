@@ -24,6 +24,7 @@ return [
             'department-create' => ['label' => 'Create Department'],
             'department-edit' => ['label' => 'Edit Department'],
             'department-delete' => ['label' => 'Delete Department'],
+            'department-import' => ['label' => 'Import Departments'],
         ],
     ],
     'gl_account' => [

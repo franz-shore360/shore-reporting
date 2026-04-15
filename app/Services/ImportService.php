@@ -140,11 +140,16 @@ class ImportService implements DataTableQueryable
         $safeBasename = $this->ensureAllowedExtension($file, $safeBasename);
         $uniqueName = $this->uniqueFilenameInImports($disk, $safeBasename);
         $path = $file->storeAs(self::IMPORT_STORAGE_DIR, $uniqueName, 'local');
+        $dbImportPath = $path;
+        $prefix = self::IMPORT_STORAGE_DIR.'/';
+        if (str_starts_with($dbImportPath, $prefix)) {
+            $dbImportPath = substr($dbImportPath, strlen($prefix));
+        }
 
         $import = Import::query()->create([
             'user_id' => $user->id,
             'entity_type' => $entityType,
-            'import_file' => $path,
+            'import_file' => $dbImportPath,
             'error_file' => null,
             'status' => Import::STATUS_PENDING,
             'total_items' => null,
@@ -154,7 +159,7 @@ class ImportService implements DataTableQueryable
             'completed_at' => null,
         ]);
 
-        return ['import' => $import, 'stored_path' => $path];
+        return ['import' => $import, 'stored_path' => $dbImportPath];
     }
 
     /**

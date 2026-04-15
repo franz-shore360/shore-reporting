@@ -12,4 +12,24 @@ return [
 
     'password_changed_action' => 'Sign In',
 
+    'import_finished_greeting' => 'Hello :name,',
+
+    'import_finished_completed_subject' => 'Your :app import has finished',
+
+    'import_finished_failed_subject' => 'Your :app import could not be completed',
+
+    'import_finished_completed_line' => 'Your :entity import on :app has finished with status: :status.',
+
+    'import_finished_failed_line' => 'Your :entity import on :app ended with status: :status.',
+
+    'import_finished_counts' => 'Rows processed: :items. Rows with errors: :errors.',
+
+    'import_finished_attachment_line' => 'A copy of your import file with an "error" column is attached.',
+
+    'import_finished_action' => 'View Imports',
+
+    'import_entity_department' => 'Department',
+
+    'import_entity_gl_account' => 'GL Account',
+
 ];

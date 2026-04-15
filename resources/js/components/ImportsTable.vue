@@ -35,7 +35,16 @@
         <span v-else>{{ fileBasename(value) }}</span>
       </span>
       <span v-else-if="cell.column.columnDef.accessorKey === 'error_file'" class="cell-ellipsis" :title="value">
-        {{ fileBasename(value) }}
+        <button
+          v-if="row.original?.id && value"
+          type="button"
+          class="file-download-btn"
+          :title="`Download ${fileBasename(value)}`"
+          @click="downloadImportErrorFile(row.original)"
+        >
+          {{ fileBasename(value) }}
+        </button>
+        <span v-else>{{ fileBasename(value) }}</span>
       </span>
       <span v-else-if="cell.column.columnDef.accessorKey === 'status'">
         {{ statusLabel(row.original.status) }}
@@ -91,6 +100,40 @@ function fileBasename(path) {
   if (!path) return '—';
   const parts = String(path).split(/[/\\]/);
   return parts[parts.length - 1] || path;
+}
+
+async function downloadImportErrorFile(row) {
+  const id = row?.id;
+  const storedPath = row?.error_file;
+  if (!id || !storedPath) return;
+  try {
+    const response = await axios.get(`/api/imports/${id}/error-file`, { responseType: 'blob' });
+    let filename = fileBasename(storedPath);
+    const dispo = response.headers['content-disposition'];
+    if (typeof dispo === 'string') {
+      const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(dispo);
+      const asciiMatch = /filename="([^"]+)"/i.exec(dispo);
+      const raw = utf8Match?.[1] ?? asciiMatch?.[1];
+      if (raw) {
+        try {
+          filename = decodeURIComponent(raw);
+        } catch {
+          filename = raw;
+        }
+      }
+    }
+    const url = URL.createObjectURL(response.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Optional: surface toast
+  }
 }
 
 async function downloadImportFile(row) {

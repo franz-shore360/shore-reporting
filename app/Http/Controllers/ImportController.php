@@ -21,7 +21,7 @@ class ImportController extends Controller
         protected DataTableService $dataTableService,
         protected DataTableExportService $dataTableExportService,
     ) {
-        $this->middleware('permission:import-list', ['only' => ['index', 'export', 'downloadFile']]);
+        $this->middleware('permission:import-list', ['only' => ['index', 'export', 'downloadFile', 'downloadErrorFile']]);
         $this->middleware('permission:import-create', ['only' => ['store']]);
     }
 
@@ -48,8 +48,37 @@ class ImportController extends Controller
 
     public function downloadFile(Import $import): BinaryFileResponse
     {
-        $relative = $import->import_file;
-        if ($relative === null || $relative === '' || ! str_starts_with((string) $relative, 'imports/')) {
+        $relative = $import->importFileDiskRelative();
+        if ($relative === null || $relative === '' || str_contains($relative, '..')) {
+            abort(404);
+        }
+
+        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/')) {
+            abort(404);
+        }
+
+        if (! Storage::disk('local')->exists($relative)) {
+            abort(404);
+        }
+
+        $absolute = Storage::disk('local')->path($relative);
+        $downloadName = basename($relative);
+
+        return response()->download($absolute, $downloadName);
+    }
+
+    public function downloadErrorFile(Import $import): BinaryFileResponse
+    {
+        $relative = $import->errorFileDiskRelative();
+        if ($relative === null || $relative === '' || str_contains($relative, '..')) {
+            abort(404);
+        }
+
+        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/errors/')) {
+            abort(404);
+        }
+
+        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/errors/'.$import->id.'_')) {
             abort(404);
         }
 

@@ -21,6 +21,9 @@ class Import extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** Files live under storage/app/imports; DB columns omit this prefix (legacy rows may still include it). */
+    public const IMPORT_STORAGE_DISK_PREFIX = 'imports';
+
     /**
      * @var list<string>
      */
@@ -58,5 +61,37 @@ class Import extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Path relative to the {@code local} disk root (storage/app) for the uploaded import file.
+     */
+    public function importFileDiskRelative(): ?string
+    {
+        $stored = $this->import_file;
+        if ($stored === null || $stored === '') {
+            return null;
+        }
+        if (str_starts_with($stored, self::IMPORT_STORAGE_DISK_PREFIX.'/')) {
+            return $stored;
+        }
+
+        return self::IMPORT_STORAGE_DISK_PREFIX.'/'.ltrim($stored, '/');
+    }
+
+    /**
+     * Path relative to the {@code local} disk root (storage/app) for the row-level error export.
+     */
+    public function errorFileDiskRelative(): ?string
+    {
+        $stored = $this->error_file;
+        if ($stored === null || $stored === '') {
+            return null;
+        }
+        if (str_starts_with($stored, self::IMPORT_STORAGE_DISK_PREFIX.'/')) {
+            return $stored;
+        }
+
+        return self::IMPORT_STORAGE_DISK_PREFIX.'/'.ltrim($stored, '/');
     }
 }

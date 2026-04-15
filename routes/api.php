@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('imports/export', [ImportController::class, 'export']);
     Route::get('imports/{import}/file', [ImportController::class, 'downloadFile']);
+    Route::get('imports/{import}/error-file', [ImportController::class, 'downloadErrorFile']);
     Route::get('imports', [ImportController::class, 'index']);
     Route::post('imports', [ImportController::class, 'store']);
 

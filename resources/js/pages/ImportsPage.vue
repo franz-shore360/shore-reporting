@@ -35,8 +35,8 @@
             <label for="import_entity_type">Entity Type</label>
             <select id="import_entity_type" v-model="form.entity_type" required>
               <option value="" disabled>Select entity…</option>
-              <option value="department">Departments</option>
-              <option value="gl_account">GL Accounts</option>
+              <option v-if="canImportDepartment" value="department">Departments</option>
+              <option v-if="canCreate" value="gl_account">GL Accounts</option>
             </select>
           </div>
           <div class="form-group">
@@ -83,6 +83,7 @@ const successToastRef = ref(null);
 const permissionNames = computed(() => authState.user?.permission_names ?? []);
 const canViewList = computed(() => permissionNames.value.includes('import-list'));
 const canCreate = computed(() => permissionNames.value.includes('import-create'));
+const canImportDepartment = computed(() => permissionNames.value.includes('department-import'));
 
 function resetForm() {
   form.entity_type = '';
@@ -93,6 +94,9 @@ function resetForm() {
 
 function openAddModal() {
   resetForm();
+  if (!canImportDepartment.value && canCreate.value) {
+    form.entity_type = 'gl_account';
+  }
   showModal.value = true;
 }
 
