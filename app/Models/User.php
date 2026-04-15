@@ -3,8 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Department;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -85,6 +85,14 @@ class User extends Authenticatable
     }
 
     /**
+     * @return HasMany<Import, $this>
+     */
+    public function imports()
+    {
+        return $this->hasMany(Import::class);
+    }
+
+    /**
      * Get the URL for the user's profile image (absolute so it works from SPA on any origin).
      */
     public function getProfileImageUrlAttribute(): ?string
@@ -93,7 +101,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return asset('storage/' . $this->profile_image);
+        return asset('storage/'.$this->profile_image);
     }
 
     /**

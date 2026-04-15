@@ -42,4 +42,11 @@ return [
             'email-log-delete' => ['label' => 'Delete Email Logs'],
         ],
     ],
+    'import' => [
+        'name' => 'Import',
+        'permissions' => [
+            'import-list' => ['label' => 'View Imports'],
+            'import-create' => ['label' => 'Upload Import Files'],
+        ],
+    ],
 ];

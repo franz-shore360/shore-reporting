@@ -10,6 +10,7 @@ import DepartmentsPage from '../pages/DepartmentsPage.vue';
 import RolesPage from '../pages/RolesPage.vue';
 import EmailLogsPage from '../pages/EmailLogsPage.vue';
 import GlAccountsPage from '../pages/GlAccountsPage.vue';
+import ImportsPage from '../pages/ImportsPage.vue';
 
 /** Browser tab title suffix — matches Laravel APP_NAME (see spa.blade.php meta application-name). */
 function appDocumentTitle() {
@@ -75,6 +76,12 @@ const routes = [
         name: 'gl-accounts',
         component: GlAccountsPage,
         meta: { requiresAuth: true, title: 'GL Accounts' },
+    },
+    {
+        path: '/imports',
+        name: 'imports',
+        component: ImportsPage,
+        meta: { requiresAuth: true, title: 'Imports' },
     },
     {
         path: '/roles',

@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmailLogController;
 use App\Http\Controllers\GlAccountController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -50,6 +51,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('gl-accounts/export', [GlAccountController::class, 'export']);
     Route::apiResource('gl-accounts', GlAccountController::class);
+
+    Route::get('imports/export', [ImportController::class, 'export']);
+    Route::get('imports/{import}/file', [ImportController::class, 'downloadFile']);
+    Route::get('imports', [ImportController::class, 'index']);
+    Route::post('imports', [ImportController::class, 'store']);
 
     Route::get('permissions', [PermissionController::class, 'index']);
     Route::get('roles/options', [RoleController::class, 'options']);
