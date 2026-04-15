@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmailLogController;
+use App\Http\Controllers\GlAccountController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -46,6 +47,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('departments/options', [DepartmentController::class, 'options']);
     Route::get('departments/export', [DepartmentController::class, 'export']);
     Route::apiResource('departments', DepartmentController::class);
+
+    Route::get('gl-accounts/export', [GlAccountController::class, 'export']);
+    Route::apiResource('gl-accounts', GlAccountController::class);
 
     Route::get('permissions', [PermissionController::class, 'index']);
     Route::get('roles/options', [RoleController::class, 'options']);

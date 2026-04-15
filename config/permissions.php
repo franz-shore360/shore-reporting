@@ -26,6 +26,15 @@ return [
             'department-delete' => ['label' => 'Delete Department'],
         ],
     ],
+    'gl_account' => [
+        'name' => 'GL Account',
+        'permissions' => [
+            'gl-account-list' => ['label' => 'View GL Account List'],
+            'gl-account-create' => ['label' => 'Create GL Account'],
+            'gl-account-edit' => ['label' => 'Edit GL Account'],
+            'gl-account-delete' => ['label' => 'Delete GL Account'],
+        ],
+    ],
     'logs' => [
         'name' => 'Logs',
         'permissions' => [

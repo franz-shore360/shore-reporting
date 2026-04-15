@@ -23,6 +23,7 @@
         <router-link :to="{ name: 'user-manager' }" @click="mobileMenuOpen = false">Users</router-link>
         <router-link v-if="hasAdminRole" :to="{ name: 'roles' }" @click="mobileMenuOpen = false">Roles</router-link>
         <router-link v-if="hasDepartmentList" :to="{ name: 'departments' }" @click="mobileMenuOpen = false">Departments</router-link>
+        <router-link v-if="hasGlAccountList" :to="{ name: 'gl-accounts' }" @click="mobileMenuOpen = false">GL Accounts</router-link>
         <div v-if="hasEmailLogList" class="account-dropdown" ref="logsDropdownRef">
           <button
             type="button"
@@ -111,6 +112,7 @@
         <router-link :to="{ name: 'user-manager' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Users</router-link>
         <router-link v-if="hasAdminRole" :to="{ name: 'roles' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Roles</router-link>
         <router-link v-if="hasDepartmentList" :to="{ name: 'departments' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Departments</router-link>
+        <router-link v-if="hasGlAccountList" :to="{ name: 'gl-accounts' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">GL Accounts</router-link>
         <router-link v-if="hasEmailLogList" :to="{ name: 'email-logs' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Email Logs</router-link>
         <router-link :to="{ name: 'profile' }" class="app-nav-mobile-link" @click="mobileMenuOpen = false">Edit Profile</router-link>
         <button type="button" class="app-nav-mobile-link app-nav-mobile-link--logout" :disabled="logoutLoading" @click="handleLogout">
@@ -160,6 +162,9 @@ const logoutLoading = ref(false);
 const hasAdminRole = computed(() => authState.user?.role_names?.includes('Admin') ?? false);
 const hasDepartmentList = computed(() =>
   (authState.user?.permission_names ?? []).includes('department-list'),
+);
+const hasGlAccountList = computed(() =>
+  (authState.user?.permission_names ?? []).includes('gl-account-list'),
 );
 const hasEmailLogList = computed(() =>
   (authState.user?.permission_names ?? []).includes('email-log-list'),
