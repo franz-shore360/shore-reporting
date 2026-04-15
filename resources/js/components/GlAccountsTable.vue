@@ -1,7 +1,6 @@
 <template>
   <DataTable
     storage-key="gl-accounts"
-    filter-layout="panel"
     :columns="glAccountColumns"
     :data="rows"
     :sortable="true"
