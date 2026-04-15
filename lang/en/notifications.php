@@ -14,13 +14,13 @@ return [
 
     'import_finished_greeting' => 'Hello :name,',
 
-    'import_finished_completed_subject' => 'Your :app import has finished',
+    'import_finished_completed_subject' => 'Your :entity import on :app has finished',
 
-    'import_finished_failed_subject' => 'Your :app import could not be completed',
+    'import_finished_failed_subject' => 'Your :entity import on :app could not be completed',
 
-    'import_finished_completed_line' => 'Your :entity import on :app has finished with status: :status.',
+    'import_finished_completed_line' => 'Your :entity import on :app has finished successfully.',
 
-    'import_finished_failed_line' => 'Your :entity import on :app ended with status: :status.',
+    'import_finished_failed_line' => 'Your :entity import on :app did not complete successfully.',
 
     'import_finished_counts' => 'Rows processed: :items. Rows with errors: :errors.',
 

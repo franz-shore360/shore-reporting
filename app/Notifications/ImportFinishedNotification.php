@@ -6,6 +6,7 @@ use App\Models\Import;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ImportFinishedNotification extends Notification
 {
@@ -27,23 +28,24 @@ class ImportFinishedNotification extends Notification
         $import = $this->import;
         $failed = $import->status === Import::STATUS_FAILED;
 
-        $subjectKey = $failed ? 'import_finished_failed_subject' : 'import_finished_completed_subject';
-        $lineKey = $failed ? 'import_finished_failed_line' : 'import_finished_completed_line';
-
         $entityLabel = match ($import->entity_type) {
             Import::ENTITY_DEPARTMENT => __('notifications.import_entity_department'),
             Import::ENTITY_GL_ACCOUNT => __('notifications.import_entity_gl_account'),
-            default => $import->entity_type,
+            default => Str::headline(str_replace('_', ' ', $import->entity_type)),
         };
 
+        $subject = $failed
+            ? __('notifications.import_finished_failed_subject', ['app' => $app, 'entity' => $entityLabel])
+            : __('notifications.import_finished_completed_subject', ['app' => $app, 'entity' => $entityLabel]);
+
+        $introLine = $failed
+            ? __('notifications.import_finished_failed_line', ['app' => $app, 'entity' => $entityLabel])
+            : __('notifications.import_finished_completed_line', ['app' => $app, 'entity' => $entityLabel]);
+
         $mail = (new MailMessage)
-            ->subject(__($subjectKey, ['app' => $app]))
+            ->subject($subject)
             ->greeting(__('notifications.import_finished_greeting', ['name' => $notifiable->full_name]))
-            ->line(__($lineKey, [
-                'app' => $app,
-                'entity' => $entityLabel,
-                'status' => $import->status,
-            ]))
+            ->line($introLine)
             ->line(__('notifications.import_finished_counts', [
                 'items' => (string) ($import->total_items ?? 0),
                 'errors' => (string) ($import->total_errors ?? 0),
