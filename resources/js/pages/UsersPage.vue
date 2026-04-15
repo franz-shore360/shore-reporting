@@ -28,7 +28,7 @@
     </div>
 
     <!-- Add/Edit User Modal -->
-    <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+    <div v-if="showModal" class="modal-backdrop">
       <div class="modal">
         <div class="modal-header">
           <h2 class="modal-title">{{ editingUser ? 'Edit User' : 'Add User' }}</h2>

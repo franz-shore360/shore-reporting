@@ -23,7 +23,7 @@
     </div>
 
     <!-- Add/Edit Role Modal -->
-    <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+    <div v-if="showModal" class="modal-backdrop">
       <div class="modal modal--wide">
         <div class="modal-header">
           <h2 class="modal-title">{{ editingRole ? 'Edit Role' : 'Add Role' }}</h2>
