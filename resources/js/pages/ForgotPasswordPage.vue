@@ -31,7 +31,7 @@
           <div v-if="error" class="error">{{ error }}</div>
 
           <div class="form-group">
-            <label for="forgot-email">Email</label>
+            <label for="forgot-email">Email <span class="required-asterisk">*</span></label>
             <input
               id="forgot-email"
               v-model="form.email"

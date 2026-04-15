@@ -1,0 +1,27 @@
+---
+description: Required form controls must show a visible asterisk in their label
+alwaysApply: true
+---
+
+# Required fields: label asterisk
+
+For **Vue forms** (modal entity forms using `modal-form`, full-page entity forms, auth flows, profile, etc.):
+
+- If a control is **required** in the browser (`required` or `:required` that resolves to `true` for that state), its **visible text label** must include a red asterisk **after** the label text, using the shared class:
+
+  `<span class="required-asterisk">*</span>`
+
+  Example (match existing pages such as `UsersPage.vue`, `RolesPage.vue`):
+
+  ```html
+  <label for="modal_email">Email <span class="required-asterisk">*</span></label>
+  <input id="modal_email" v-model="form.email" type="email" required />
+  ```
+
+- **Conditional required** (e.g. password only when creating a user): show the asterisk only in the same states where `required` applies (`v-if="!editingUser"` on the span, aligned with `:required` on the input).
+
+- **Optional** fields (no `required`, optional server rules): **no** asterisk.
+
+- Styling is centralized in `resources/css/app.css` (`.required-asterisk`); do not invent a new color or class unless you extend the design system.
+
+When adding or editing forms in Blade or Vue, keep labels and `required` in sync so users always see which fields block submit.

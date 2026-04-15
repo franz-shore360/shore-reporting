@@ -34,7 +34,7 @@
         <form @submit.prevent="submitDepartment" class="modal-form">
           <div v-if="formError" class="form-error">{{ formError }}</div>
           <div class="form-group">
-            <label for="modal_name">Name</label>
+            <label for="modal_name">Name <span class="required-asterisk">*</span></label>
             <input id="modal_name" v-model="form.name" type="text" required />
           </div>
           <div class="form-group checkbox-group">

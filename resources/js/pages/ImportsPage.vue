@@ -32,7 +32,7 @@
         <form class="modal-form" @submit.prevent="submitImport">
           <div v-if="formError" class="form-error">{{ formError }}</div>
           <div class="form-group">
-            <label for="import_entity_type">Entity Type</label>
+            <label for="import_entity_type">Entity Type <span class="required-asterisk">*</span></label>
             <select id="import_entity_type" v-model="form.entity_type" required>
               <option value="" disabled>Select entity…</option>
               <option v-if="canImportDepartment" value="department">Departments</option>
@@ -40,7 +40,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="import_file">File</label>
+            <label for="import_file">File <span class="required-asterisk">*</span></label>
             <input
               id="import_file"
               ref="fileInputRef"

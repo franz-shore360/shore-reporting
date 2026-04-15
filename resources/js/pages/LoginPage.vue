@@ -29,7 +29,7 @@
           <div v-if="error" class="error">{{ error }}</div>
 
           <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email">Email <span class="required-asterisk">*</span></label>
             <input
               id="email"
               v-model="form.email"
@@ -42,7 +42,7 @@
           </div>
 
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">Password <span class="required-asterisk">*</span></label>
             <input
               id="password"
               v-model="form.password"

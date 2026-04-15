@@ -79,7 +79,7 @@
         </div>
 
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email">Email <span class="required-asterisk">*</span></label>
           <input
             id="email"
             v-model="form.email"

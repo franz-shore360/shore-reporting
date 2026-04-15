@@ -33,11 +33,11 @@
         <form @submit.prevent="submitForm" class="modal-form">
           <div v-if="formError" class="form-error">{{ formError }}</div>
           <div class="form-group">
-            <label for="modal_gl_name">Name</label>
+            <label for="modal_gl_name">Name <span class="required-asterisk">*</span></label>
             <input id="modal_gl_name" v-model="form.name" type="text" required />
           </div>
           <div class="form-group">
-            <label for="modal_gl_code">Code</label>
+            <label for="modal_gl_code">Code <span class="required-asterisk">*</span></label>
             <input id="modal_gl_code" v-model="form.code" type="text" required autocomplete="off" />
           </div>
           <div class="modal-actions">

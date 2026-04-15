@@ -16,3 +16,5 @@ For **modal and page forms** that **create or update** a domain entity (users, d
 Keep **flow-specific** labels where the action is not generic persistence, for example: `Sign In`, `Reset Password`, `Send Reset Link`, `Apply` (bulk actions), `Confirm` / `Delete` in confirm dialogs.
 
 When adding new CRUD or settings forms in Vue (or Blade), follow this pattern by default.
+
+**Required fields:** any control with `required` must show a label asterisk per `.cursor/rules/ui-form-required-labels.mdc`.

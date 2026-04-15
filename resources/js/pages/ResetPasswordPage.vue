@@ -27,7 +27,7 @@
         <div v-if="error" class="error">{{ error }}</div>
 
         <div class="form-group">
-          <label for="reset-password">New Password</label>
+          <label for="reset-password">New Password <span class="required-asterisk">*</span></label>
           <input
             id="reset-password"
             v-model="form.password"
@@ -38,7 +38,7 @@
           />
         </div>
         <div class="form-group">
-          <label for="reset-password-confirmation">Confirm New Password</label>
+          <label for="reset-password-confirmation">Confirm New Password <span class="required-asterisk">*</span></label>
           <input
             id="reset-password-confirmation"
             v-model="form.password_confirmation"

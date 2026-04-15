@@ -139,7 +139,10 @@
             Only administrators can change the active status of an admin account.
           </p>
           <div class="form-group">
-            <label for="modal_password">{{ editingUser ? 'New Password (Leave Blank To Keep)' : 'Password' }}</label>
+            <label for="modal_password">
+              {{ editingUser ? 'New Password (Leave Blank To Keep)' : 'Password' }}
+              <span v-if="!editingUser" class="required-asterisk">*</span>
+            </label>
             <input
               id="modal_password"
               v-model="form.password"
@@ -149,11 +152,12 @@
             />
           </div>
           <div v-if="form.password" class="form-group">
-            <label for="modal_password_confirmation">Confirm Password</label>
+            <label for="modal_password_confirmation">Confirm Password <span class="required-asterisk">*</span></label>
             <input
               id="modal_password_confirmation"
               v-model="form.password_confirmation"
               type="password"
+              required
               autocomplete="new-password"
             />
           </div>
