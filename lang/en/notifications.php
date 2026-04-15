@@ -12,21 +12,21 @@ return [
 
     'password_changed_action' => 'Sign In',
 
-    'import_finished_greeting' => 'Hello :name,',
+    'import_completed_greeting' => 'Hello :name,',
 
-    'import_finished_completed_subject' => 'Your :entity import on :app has finished',
+    'import_completed_success_subject' => 'Your :entity import on :app has completed',
 
-    'import_finished_failed_subject' => 'Your :entity import on :app could not be completed',
+    'import_completed_failed_subject' => 'Your :entity import on :app could not be completed',
 
-    'import_finished_completed_line' => 'Your :entity import on :app has finished successfully.',
+    'import_completed_success_line' => 'Your :entity import on :app has completed successfully.',
 
-    'import_finished_failed_line' => 'Your :entity import on :app did not complete successfully.',
+    'import_completed_failed_line' => 'Your :entity import on :app did not complete successfully.',
 
-    'import_finished_counts' => 'Rows processed: :items. Rows with errors: :errors.',
+    'import_completed_counts' => 'Rows processed: :items. Rows with errors: :errors.',
 
-    'import_finished_attachment_line' => 'A copy of your import file with an "error" column is attached.',
+    'import_completed_attachment_line' => 'A copy of your import file with an "error" column is attached.',
 
-    'import_finished_action' => 'View Imports',
+    'import_completed_action' => 'View Imports',
 
     'import_entity_department' => 'Department',
 

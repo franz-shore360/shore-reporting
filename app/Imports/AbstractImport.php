@@ -3,7 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Import;
-use App\Notifications\ImportFinishedNotification;
+use App\Notifications\ImportCompletedNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use OpenSpout\Common\Entity\Row;
@@ -367,7 +367,7 @@ abstract class AbstractImport
             return;
         }
 
-        $user->notify(new ImportFinishedNotification($this->import));
+        $user->notify(new ImportCompletedNotification($this->import));
         $this->import->update(['email_sent' => true]);
     }
 }

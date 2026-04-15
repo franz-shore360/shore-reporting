@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class ImportFinishedNotification extends Notification
+class ImportCompletedNotification extends Notification
 {
     public function __construct(protected Import $import) {}
 
@@ -35,18 +35,18 @@ class ImportFinishedNotification extends Notification
         };
 
         $subject = $failed
-            ? __('notifications.import_finished_failed_subject', ['app' => $app, 'entity' => $entityLabel])
-            : __('notifications.import_finished_completed_subject', ['app' => $app, 'entity' => $entityLabel]);
+            ? __('notifications.import_completed_failed_subject', ['app' => $app, 'entity' => $entityLabel])
+            : __('notifications.import_completed_success_subject', ['app' => $app, 'entity' => $entityLabel]);
 
         $introLine = $failed
-            ? __('notifications.import_finished_failed_line', ['app' => $app, 'entity' => $entityLabel])
-            : __('notifications.import_finished_completed_line', ['app' => $app, 'entity' => $entityLabel]);
+            ? __('notifications.import_completed_failed_line', ['app' => $app, 'entity' => $entityLabel])
+            : __('notifications.import_completed_success_line', ['app' => $app, 'entity' => $entityLabel]);
 
         $mail = (new MailMessage)
             ->subject($subject)
-            ->greeting(__('notifications.import_finished_greeting', ['name' => $notifiable->full_name]))
+            ->greeting(__('notifications.import_completed_greeting', ['name' => $notifiable->full_name]))
             ->line($introLine)
-            ->line(__('notifications.import_finished_counts', [
+            ->line(__('notifications.import_completed_counts', [
                 'items' => (string) ($import->total_items ?? 0),
                 'errors' => (string) ($import->total_errors ?? 0),
             ]));
@@ -61,10 +61,10 @@ class ImportFinishedNotification extends Notification
             $mime = str_ends_with(strtolower($errorDisk), '.xlsx')
                 ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 : 'text/csv; charset=UTF-8';
-            $mail->line(__('notifications.import_finished_attachment_line'));
+            $mail->line(__('notifications.import_completed_attachment_line'));
             $mail->attach($path, ['as' => $as, 'mime' => $mime]);
         }
 
-        return $mail->action(__('notifications.import_finished_action'), url('/imports'));
+        return $mail->action(__('notifications.import_completed_action'), url('/imports'));
     }
 }
