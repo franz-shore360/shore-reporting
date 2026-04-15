@@ -1,0 +1,18 @@
+---
+description: Primary submit on add/edit entity forms uses Save (same label for create and edit)
+alwaysApply: true
+---
+
+# Form primary submit: Save
+
+For **modal and page forms** that **create or update** a domain entity (users, departments, roles, GL accounts, profile, etc.):
+
+- Use **`Save`** as the primary submit button label in **both** add and edit modes.
+- Do **not** switch the submit label to `Add …` or `Save Changes`; the modal title (or page context) already shows Add vs Edit.
+- While submitting, use **`Saving…`** (match the existing loading pattern in the file if slightly different).
+
+## Exceptions
+
+Keep **flow-specific** labels where the action is not generic persistence, for example: `Sign In`, `Reset Password`, `Send Reset Link`, `Apply` (bulk actions), `Confirm` / `Delete` in confirm dialogs.
+
+When adding new CRUD or settings forms in Vue (or Blade), follow this pattern by default.

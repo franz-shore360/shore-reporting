@@ -9,7 +9,7 @@ alwaysApply: true
 
 Use **Title Case** (capitalize the first letter of each major word) for:
 
-- **Buttons** — e.g. `Save Changes`, `Add User`, `Back To Home`, `Log Out`, `Delete`, `Cancel`
+- **Buttons** — e.g. `Save` (primary submit on entity forms; see form-save-button rule), `Add User` (toolbar open-modal actions), `Back To Home`, `Log Out`, `Delete`, `Cancel`
 - **Page titles** — `<h1>`, visible page headings, and browser title segments (e.g. `Users / Shore Reporting`)
 - **Modal / dialog titles** — e.g. `Edit Role`, `Delete Department`
 - **Primary section headings** that act like titles (e.g. card headers)
@@ -18,7 +18,7 @@ Use **Title Case** (capitalize the first letter of each major word) for:
 
 | Avoid | Prefer |
 |-------|--------|
-| Save changes | Save Changes |
+| Save changes | Save |
 | Add user | Add User |
 | Back to home | Back To Home |
 | Edit profile | Edit Profile |

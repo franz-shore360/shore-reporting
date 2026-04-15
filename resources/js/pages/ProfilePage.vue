@@ -129,7 +129,7 @@
 
         <div class="form-group">
           <button type="submit" class="btn btn-primary" :disabled="loading">
-            {{ loading ? 'Saving…' : 'Save Changes' }}
+            {{ loading ? 'Saving…' : 'Save' }}
           </button>
         </div>
       </form>

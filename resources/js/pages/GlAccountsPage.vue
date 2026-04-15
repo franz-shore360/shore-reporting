@@ -43,7 +43,7 @@
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
             <button type="submit" class="btn btn-primary" :disabled="submitLoading">
-              {{ submitLoading ? 'Saving…' : (editingRow ? 'Save Changes' : 'Add GL Account') }}
+              {{ submitLoading ? 'Saving…' : 'Save' }}
             </button>
           </div>
         </form>
