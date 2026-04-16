@@ -36,7 +36,7 @@
             <select id="import_entity_type" v-model="form.entity_type" required>
               <option value="" disabled>Select entity…</option>
               <option v-if="canImportDepartment" value="department">Departments</option>
-              <option v-if="canCreate" value="gl_account">GL Accounts</option>
+              <option v-if="canImportGlAccount" value="gl_account">GL Accounts</option>
             </select>
           </div>
           <div class="form-group">
@@ -84,6 +84,7 @@ const permissionNames = computed(() => authState.user?.permission_names ?? []);
 const canViewList = computed(() => permissionNames.value.includes('import-list'));
 const canCreate = computed(() => permissionNames.value.includes('import-create'));
 const canImportDepartment = computed(() => permissionNames.value.includes('department-import'));
+const canImportGlAccount = computed(() => permissionNames.value.includes('gl-account-import'));
 
 function resetForm() {
   form.entity_type = '';
@@ -94,8 +95,10 @@ function resetForm() {
 
 function openAddModal() {
   resetForm();
-  if (!canImportDepartment.value && canCreate.value) {
+  if (!canImportDepartment.value && canImportGlAccount.value) {
     form.entity_type = 'gl_account';
+  } else if (canImportDepartment.value && !canImportGlAccount.value) {
+    form.entity_type = 'department';
   }
   showModal.value = true;
 }
@@ -127,7 +130,9 @@ async function submitImport() {
     await axios.post('/api/imports', fd);
     closeModal();
     await tableRef.value?.refresh();
-    successToastRef.value?.show('Import file uploaded successfully.');
+    successToastRef.value?.show(
+      'Your import file was uploaded. You will receive an email when processing is complete.',
+    );
   } catch (e) {
     if (e.response?.status === 422 && e.response?.data?.errors) {
       const errors = e.response.data.errors;

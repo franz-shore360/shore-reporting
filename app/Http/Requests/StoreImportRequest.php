@@ -16,11 +16,11 @@ class StoreImportRequest extends FormRequest
             return false;
         }
 
-        if ($this->input('entity_type') === Import::ENTITY_DEPARTMENT) {
-            return $user->can('department-import');
-        }
-
-        return true;
+        return match ($this->input('entity_type')) {
+            Import::ENTITY_DEPARTMENT => $user->can('department-import'),
+            Import::ENTITY_GL_ACCOUNT => $user->can('gl-account-import'),
+            default => false,
+        };
     }
 
     /**

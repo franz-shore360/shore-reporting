@@ -34,6 +34,7 @@ return [
             'gl-account-create' => ['label' => 'Create GL Account'],
             'gl-account-edit' => ['label' => 'Edit GL Account'],
             'gl-account-delete' => ['label' => 'Delete GL Account'],
+            'gl-account-import' => ['label' => 'Import GL Accounts'],
         ],
     ],
     'logs' => [
