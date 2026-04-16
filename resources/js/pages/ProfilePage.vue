@@ -90,23 +90,6 @@
         </div>
 
         <div class="form-group">
-          <label for="department_id">Department</label>
-          <select
-            id="department_id"
-            v-model="form.department_id"
-          >
-            <option :value="null">No Department</option>
-            <option
-              v-for="dept in departments"
-              :key="dept.id"
-              :value="dept.id"
-            >
-              {{ dept.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label for="password">New Password</label>
           <input
             id="password"
@@ -148,7 +131,6 @@ import SuccessToast from '../components/SuccessToast.vue';
 const loading = ref(false);
 const error = ref('');
 const successToastRef = ref(null);
-const departments = ref([]);
 
 const profileImageInput = ref(null);
 const form = reactive({
@@ -156,7 +138,6 @@ const form = reactive({
   middle_name: '',
   last_name: '',
   email: '',
-  department_id: null,
   password: '',
   password_confirmation: '',
   profile_image_file: null,
@@ -203,7 +184,6 @@ function setFormFromUser(user) {
   form.middle_name = user.middle_name ?? '';
   form.last_name = user.last_name ?? '';
   form.email = user.email ?? '';
-  form.department_id = user.department_id ?? null;
   form.password = '';
   form.password_confirmation = '';
   form.profile_image_file = null;
@@ -215,14 +195,8 @@ function setFormFromUser(user) {
   displayPreviewUrl.value = user.profile_image_url ?? null;
 }
 
-onMounted(async () => {
+onMounted(() => {
   setFormFromUser(authState.user);
-  try {
-    const { data } = await axios.get('/api/departments/options');
-    departments.value = Array.isArray(data) ? data : (data?.data ?? []);
-  } catch {
-    departments.value = [];
-  }
 });
 
 async function submit() {
@@ -239,11 +213,6 @@ async function submit() {
       formData.append('middle_name', form.middle_name || '');
       formData.append('last_name', form.last_name);
       formData.append('email', form.email);
-      if (form.department_id != null) {
-        formData.append('department_id', form.department_id);
-      } else {
-        formData.append('department_id', '');
-      }
       formData.append('profile_image', form.profile_image_file);
       if (form.password) {
         formData.append('password', form.password);
@@ -260,7 +229,6 @@ async function submit() {
         middle_name: form.middle_name || null,
         last_name: form.last_name,
         email: form.email,
-        department_id: form.department_id || null,
       };
       if (form.password) {
         payload.password = form.password;
