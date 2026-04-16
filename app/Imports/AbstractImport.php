@@ -19,7 +19,7 @@ abstract class AbstractImport
 
     protected int $totalErrorsProcessed = 0;
 
-    /** Stored on the import row without the {@see Import::IMPORT_STORAGE_DISK_PREFIX} prefix (e.g. errors/file_errors.csv). */
+    /** Stored on the import row: error file basename only (e.g. file_errors.csv). */
     protected ?string $errorFileRelative = null;
 
     public function __construct(protected Import $import) {}
@@ -125,10 +125,10 @@ abstract class AbstractImport
         $importPath = $this->absoluteImportPath();
         $extension = strtolower(pathinfo($importPath, PATHINFO_EXTENSION));
 
-        Storage::disk('local')->makeDirectory('imports/errors');
+        Storage::disk('local')->makeDirectory(rtrim(Import::ERROR_FILE_BASE_PATH, '/'));
 
-        $relative = $this->import->canonicalErrorFileStorageRelative();
-        $absolute = Storage::disk('local')->path(Import::IMPORT_STORAGE_DISK_PREFIX.'/'.$relative);
+        $basename = $this->import->canonicalErrorFileBasename();
+        $absolute = Storage::disk('local')->path(Import::ERROR_FILE_BASE_PATH.$basename);
 
         $headerOut = $this->cellsToScalarStrings($headerRaw);
         $headerOut[] = 'error';
@@ -148,7 +148,7 @@ abstract class AbstractImport
             default => throw new \InvalidArgumentException("Cannot write error file for extension: {$extension}"),
         };
 
-        return $relative;
+        return $basename;
     }
 
     /**
@@ -248,7 +248,7 @@ abstract class AbstractImport
             throw new \InvalidArgumentException('Invalid import file path.');
         }
 
-        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/')) {
+        if (! str_starts_with($relative, Import::IMPORT_FILE_BASE_PATH)) {
             throw new \InvalidArgumentException('Invalid import file path.');
         }
 

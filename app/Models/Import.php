@@ -21,8 +21,15 @@ class Import extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    /** Files live under storage/app/imports; DB columns omit this prefix (legacy rows may still include it). */
-    public const IMPORT_STORAGE_DISK_PREFIX = 'imports';
+    /**
+     * Path relative to the {@code local} disk root (storage/app) for uploaded import files (must end with /).
+     */
+    public const IMPORT_FILE_BASE_PATH = 'imports/';
+
+    /**
+     * Path relative to the {@code local} disk root (storage/app) for per-import row error files (must end with /).
+     */
+    public const ERROR_FILE_BASE_PATH = 'imports/errors/';
 
     /**
      * @var list<string>
@@ -65,6 +72,8 @@ class Import extends Model
 
     /**
      * Path relative to the {@code local} disk root (storage/app) for the uploaded import file.
+     *
+     * {@see IMPORT_FILE_BASE_PATH} is the canonical prefix; DB {@see Import::$import_file} usually omits it.
      */
     public function importFileDiskRelative(): ?string
     {
@@ -72,15 +81,18 @@ class Import extends Model
         if ($stored === null || $stored === '') {
             return null;
         }
-        if (str_starts_with($stored, self::IMPORT_STORAGE_DISK_PREFIX.'/')) {
+        if (str_starts_with($stored, self::IMPORT_FILE_BASE_PATH)) {
             return $stored;
         }
 
-        return self::IMPORT_STORAGE_DISK_PREFIX.'/'.ltrim($stored, '/');
+        return self::IMPORT_FILE_BASE_PATH.ltrim($stored, '/');
     }
 
     /**
-     * Path relative to the {@code local} disk root (storage/app) for the row-level error export.
+     * Path relative to the {@code local} disk root (storage/app) for the row-level error file.
+     *
+     * {@see Import::$error_file} stores the file basename only (e.g. {@code myfile_errors.csv}), or a path
+     * already prefixed with {@see IMPORT_FILE_BASE_PATH}.
      */
     public function errorFileDiskRelative(): ?string
     {
@@ -88,18 +100,28 @@ class Import extends Model
         if ($stored === null || $stored === '') {
             return null;
         }
-        if (str_starts_with($stored, self::IMPORT_STORAGE_DISK_PREFIX.'/')) {
+
+        $stored = str_replace('\\', '/', trim($stored));
+        if (str_contains($stored, '..')) {
+            return null;
+        }
+
+        if (str_starts_with($stored, self::IMPORT_FILE_BASE_PATH)) {
             return $stored;
         }
 
-        return self::IMPORT_STORAGE_DISK_PREFIX.'/'.ltrim($stored, '/');
+        $basename = basename($stored);
+        if ($basename === '' || $basename === '.' || $basename === '..') {
+            return null;
+        }
+
+        return self::ERROR_FILE_BASE_PATH.$basename;
     }
 
     /**
-     * Relative path for the row-error export file as stored in {@see Import::$error_file}
-     * (under {@see Import::IMPORT_STORAGE_DISK_PREFIX}/ on disk), e.g. {@code errors/myfile_errors.csv}.
+     * Basename for the row-error file as stored in {@see Import::$error_file} (no directory segments).
      */
-    public function canonicalErrorFileStorageRelative(): string
+    public function canonicalErrorFileBasename(): string
     {
         $stored = (string) ($this->import_file ?? '');
         $basename = basename(str_replace('\\', '/', $stored));
@@ -109,6 +131,6 @@ class Import extends Model
             ? (string) preg_replace('/[^A-Za-z0-9._-]+/', '_', $stem)
             : 'import';
 
-        return 'errors/'.$stem.'_errors.'.$extension;
+        return $stem.'_errors.'.$extension;
     }
 }

@@ -54,7 +54,7 @@ class ImportCompletedNotification extends Notification
         $errorDisk = $import->errorFileDiskRelative();
         if (is_string($errorDisk)
             && $errorDisk !== ''
-            && str_starts_with($errorDisk, Import::IMPORT_STORAGE_DISK_PREFIX.'/errors/')
+            && str_starts_with($errorDisk, Import::ERROR_FILE_BASE_PATH)
             && Storage::disk('local')->exists($errorDisk)) {
             $path = Storage::disk('local')->path($errorDisk);
             $as = basename($errorDisk);

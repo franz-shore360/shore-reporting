@@ -14,8 +14,6 @@ use Illuminate\Support\Str;
 
 class ImportService implements DataTableQueryable
 {
-    private const IMPORT_STORAGE_DIR = 'imports';
-
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -134,14 +132,15 @@ class ImportService implements DataTableQueryable
     public function storeUpload(User $user, string $entityType, UploadedFile $file): array
     {
         $disk = Storage::disk('local');
-        $disk->makeDirectory(self::IMPORT_STORAGE_DIR);
+        $importDir = rtrim(Import::IMPORT_FILE_BASE_PATH, '/');
+        $disk->makeDirectory($importDir);
 
         $safeBasename = $this->sanitizeOriginalBasename($file->getClientOriginalName());
         $safeBasename = $this->ensureAllowedExtension($file, $safeBasename);
         $uniqueName = $this->uniqueFilenameInImports($disk, $safeBasename);
-        $path = $file->storeAs(self::IMPORT_STORAGE_DIR, $uniqueName, 'local');
+        $path = $file->storeAs($importDir, $uniqueName, 'local');
         $dbImportPath = $path;
-        $prefix = self::IMPORT_STORAGE_DIR.'/';
+        $prefix = Import::IMPORT_FILE_BASE_PATH;
         if (str_starts_with($dbImportPath, $prefix)) {
             $dbImportPath = substr($dbImportPath, strlen($prefix));
         }
@@ -213,7 +212,7 @@ class ImportService implements DataTableQueryable
      */
     protected function uniqueFilenameInImports(Filesystem $disk, string $filename): string
     {
-        $dir = self::IMPORT_STORAGE_DIR;
+        $dir = rtrim(Import::IMPORT_FILE_BASE_PATH, '/');
         $relative = $dir.'/'.$filename;
 
         if (! $disk->exists($relative)) {
