@@ -94,4 +94,21 @@ class Import extends Model
 
         return self::IMPORT_STORAGE_DISK_PREFIX.'/'.ltrim($stored, '/');
     }
+
+    /**
+     * Relative path for the row-error export file as stored in {@see Import::$error_file}
+     * (under {@see Import::IMPORT_STORAGE_DISK_PREFIX}/ on disk), e.g. {@code errors/myfile_errors.csv}.
+     */
+    public function canonicalErrorFileStorageRelative(): string
+    {
+        $stored = (string) ($this->import_file ?? '');
+        $basename = basename(str_replace('\\', '/', $stored));
+        $extension = strtolower(pathinfo($basename, PATHINFO_EXTENSION));
+        $stem = pathinfo($basename, PATHINFO_FILENAME);
+        $stem = is_string($stem) && $stem !== ''
+            ? (string) preg_replace('/[^A-Za-z0-9._-]+/', '_', $stem)
+            : 'import';
+
+        return 'errors/'.$stem.'_errors.'.$extension;
+    }
 }

@@ -19,7 +19,7 @@
         <p class="permission-message">You do not have permission to view the import list.</p>
       </div>
       <div v-else class="card table-card">
-        <ImportsTable ref="tableRef" :can-fetch="canViewList" />
+        <ImportsTable ref="tableRef" :can-fetch="canViewList" @notify-error="onImportDownloadError" />
       </div>
     </template>
 
@@ -79,6 +79,10 @@ const form = reactive({
 const formError = ref('');
 const uploadLoading = ref(false);
 const successToastRef = ref(null);
+
+function onImportDownloadError(message) {
+  successToastRef.value?.showError(typeof message === 'string' ? message : 'Download failed.');
+}
 
 const permissionNames = computed(() => authState.user?.permission_names ?? []);
 const canViewList = computed(() => permissionNames.value.includes('import-list'));

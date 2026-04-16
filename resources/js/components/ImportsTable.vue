@@ -61,6 +61,8 @@ import axios from 'axios';
 import DataTable from './DataTable.vue';
 import { formatTableCellValue } from '../utils/date';
 
+const emit = defineEmits(['notify-error']);
+
 const props = defineProps({
   canFetch: {
     type: Boolean,
@@ -102,6 +104,34 @@ function fileBasename(path) {
   return parts[parts.length - 1] || path;
 }
 
+async function messageFromDownloadError(error, fallbackMessage) {
+  const res = error?.response;
+  if (!res) {
+    return fallbackMessage;
+  }
+  const { data, status } = res;
+  if (data instanceof Blob) {
+    const text = await data.text();
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed.message === 'string' && parsed.message.trim() !== '') {
+          return parsed.message;
+        }
+      } catch {
+        if (text.length < 400 && !text.trim().startsWith('<')) {
+          return text;
+        }
+      }
+    }
+    return status === 404 ? fallbackMessage : 'Download failed.';
+  }
+  if (data && typeof data.message === 'string' && data.message.trim() !== '') {
+    return data.message;
+  }
+  return status === 404 ? fallbackMessage : 'Download failed.';
+}
+
 async function downloadImportErrorFile(row) {
   const id = row?.id;
   const storedPath = row?.error_file;
@@ -131,8 +161,9 @@ async function downloadImportErrorFile(row) {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  } catch {
-    // Optional: surface toast
+  } catch (e) {
+    const msg = await messageFromDownloadError(e, 'The error file was not found.');
+    emit('notify-error', msg);
   }
 }
 
@@ -165,8 +196,9 @@ async function downloadImportFile(row) {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  } catch {
-    // Optional: surface toast; keep table usable without extra deps
+  } catch (e) {
+    const msg = await messageFromDownloadError(e, 'The import file was not found.');
+    emit('notify-error', msg);
   }
 }
 

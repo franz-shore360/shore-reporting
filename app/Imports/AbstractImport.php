@@ -19,7 +19,7 @@ abstract class AbstractImport
 
     protected int $totalErrorsProcessed = 0;
 
-    /** Stored on the import row without the {@see Import::IMPORT_STORAGE_DISK_PREFIX} prefix (e.g. errors/1_file_errors.csv). */
+    /** Stored on the import row without the {@see Import::IMPORT_STORAGE_DISK_PREFIX} prefix (e.g. errors/file_errors.csv). */
     protected ?string $errorFileRelative = null;
 
     public function __construct(protected Import $import) {}
@@ -127,9 +127,7 @@ abstract class AbstractImport
 
         Storage::disk('local')->makeDirectory('imports/errors');
 
-        $stem = pathinfo((string) $this->import->import_file, PATHINFO_FILENAME);
-        $stem = is_string($stem) && $stem !== '' ? (string) preg_replace('/[^A-Za-z0-9._-]+/', '_', $stem) : 'import';
-        $relative = 'errors/'.$this->import->id.'_'.$stem.'_errors.'.$extension;
+        $relative = $this->import->canonicalErrorFileStorageRelative();
         $absolute = Storage::disk('local')->path(Import::IMPORT_STORAGE_DISK_PREFIX.'/'.$relative);
 
         $headerOut = $this->cellsToScalarStrings($headerRaw);

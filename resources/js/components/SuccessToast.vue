@@ -4,8 +4,9 @@
       <div
         v-if="message"
         class="success-toast"
-        role="status"
-        aria-live="polite"
+        :class="{ 'success-toast--error': isError }"
+        :role="isError ? 'alert' : 'status'"
+        :aria-live="isError ? 'assertive' : 'polite'"
       >
         <span class="success-toast-text">{{ message }}</span>
         <button
@@ -25,6 +26,7 @@
 import { ref, onUnmounted } from 'vue';
 
 const message = ref('');
+const isError = ref(false);
 let timer = null;
 
 function dismiss() {
@@ -33,18 +35,32 @@ function dismiss() {
     timer = null;
   }
   message.value = '';
+  isError.value = false;
 }
 
 function show(text) {
   dismiss();
+  isError.value = false;
   message.value = text;
   timer = setTimeout(() => {
     message.value = '';
+    isError.value = false;
     timer = null;
   }, 4500);
 }
 
-defineExpose({ show, dismiss });
+function showError(text) {
+  dismiss();
+  isError.value = true;
+  message.value = text;
+  timer = setTimeout(() => {
+    message.value = '';
+    isError.value = false;
+    timer = null;
+  }, 6500);
+}
+
+defineExpose({ show, showError, dismiss });
 
 onUnmounted(() => {
   dismiss();
@@ -91,6 +107,9 @@ onUnmounted(() => {
 .success-toast-dismiss:hover {
   color: var(--color-text);
   background: var(--color-surface-hover);
+}
+.success-toast--error {
+  border-color: var(--color-danger);
 }
 .success-toast-enter-active,
 .success-toast-leave-active {

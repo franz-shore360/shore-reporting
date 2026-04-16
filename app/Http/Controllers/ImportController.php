@@ -46,19 +46,15 @@ class ImportController extends Controller
         );
     }
 
-    public function downloadFile(Import $import): BinaryFileResponse
+    public function downloadFile(Import $import): BinaryFileResponse|JsonResponse
     {
         $relative = $import->importFileDiskRelative();
         if ($relative === null || $relative === '' || str_contains($relative, '..')) {
-            abort(404);
-        }
-
-        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/')) {
-            abort(404);
+            return response()->json(['message' => 'The import file was not found.'], 404);
         }
 
         if (! Storage::disk('local')->exists($relative)) {
-            abort(404);
+            return response()->json(['message' => 'The import file was not found.'], 404);
         }
 
         $absolute = Storage::disk('local')->path($relative);
@@ -67,23 +63,15 @@ class ImportController extends Controller
         return response()->download($absolute, $downloadName);
     }
 
-    public function downloadErrorFile(Import $import): BinaryFileResponse
+    public function downloadErrorFile(Import $import): BinaryFileResponse|JsonResponse
     {
         $relative = $import->errorFileDiskRelative();
         if ($relative === null || $relative === '' || str_contains($relative, '..')) {
-            abort(404);
-        }
-
-        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/errors/')) {
-            abort(404);
-        }
-
-        if (! str_starts_with($relative, Import::IMPORT_STORAGE_DISK_PREFIX.'/errors/'.$import->id.'_')) {
-            abort(404);
+            return response()->json(['message' => 'The error file was not found.'], 404);
         }
 
         if (! Storage::disk('local')->exists($relative)) {
-            abort(404);
+            return response()->json(['message' => 'The error file was not found.'], 404);
         }
 
         $absolute = Storage::disk('local')->path($relative);
