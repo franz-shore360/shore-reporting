@@ -38,7 +38,7 @@ return [
         ],
     ],
     'logs' => [
-        'name' => 'Logs',
+        'name' => 'Email Logs',
         'permissions' => [
             'email-log-list' => ['label' => 'View Email Logs'],
             'email-log-delete' => ['label' => 'Delete Email Logs'],
