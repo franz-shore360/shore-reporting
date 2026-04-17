@@ -15,6 +15,12 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
+     * Relative to the public disk (storage/app/public). Web URL: /storage/{PROFILE_IMAGE_PATH}/{filename}.
+     * users.profile_image stores only the filename under this directory.
+     */
+    public const PROFILE_IMAGE_PATH = 'images/profiles';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -101,7 +107,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return asset('storage/'.$this->profile_image);
+        return asset('storage/'.self::PROFILE_IMAGE_PATH.'/'.$this->profile_image);
     }
 
     /**

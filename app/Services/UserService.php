@@ -117,23 +117,23 @@ class UserService implements DataTableQueryable
         if (! empty($data['remove_profile_image'])) {
             $user = $this->userRepository->find($id);
             if ($user !== null && $user->profile_image) {
-                Storage::disk('public')->delete($user->profile_image);
+                $this->deleteProfileImageFile($user->profile_image);
             }
             $data['profile_image'] = null;
             unset($data['remove_profile_image']);
         }
 
         if ($profileImage !== null) {
-            $storedPath = $profileImage instanceof UploadedFile
-                ? $profileImage->store('profile-images', 'public')
+            $storedBasename = $profileImage instanceof UploadedFile
+                ? $this->storeProfileImageFromUploadedFile($profileImage)
                 : $this->storeProfileImageFromUrl($profileImage);
 
-            if ($storedPath !== null) {
+            if ($storedBasename !== null) {
                 $user = $this->userRepository->find($id);
                 if ($user !== null && $user->profile_image) {
-                    Storage::disk('public')->delete($user->profile_image);
+                    $this->deleteProfileImageFile($user->profile_image);
                 }
-                $data['profile_image'] = $storedPath;
+                $data['profile_image'] = $storedBasename;
             }
         }
 
@@ -141,8 +141,33 @@ class UserService implements DataTableQueryable
     }
 
     /**
-     * Download an image from a URL and store it in the profile-images disk.
-     * Returns the stored path, or null if the download failed.
+     * Store an uploaded profile image on the public disk (storage/app/public/{User::PROFILE_IMAGE_PATH}).
+     * Returns the filename only (for users.profile_image), or null on failure.
+     */
+    public function storeProfileImageFromUploadedFile(UploadedFile $file): ?string
+    {
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $basename = Str::random(40).'.'.$ext;
+        $stored = $file->storeAs(User::PROFILE_IMAGE_PATH, $basename, 'public');
+
+        return $stored !== false ? basename($stored) : null;
+    }
+
+    /**
+     * Remove a profile image from disk (users.profile_image is the filename only).
+     */
+    public function deleteProfileImageFile(?string $profileImageColumnValue): void
+    {
+        if ($profileImageColumnValue === null || $profileImageColumnValue === '') {
+            return;
+        }
+
+        Storage::disk('public')->delete(User::PROFILE_IMAGE_PATH.'/'.$profileImageColumnValue);
+    }
+
+    /**
+     * Download an image from a URL and store it on the public disk (storage/app/public/{User::PROFILE_IMAGE_PATH}).
+     * Returns the filename only (for users.profile_image), or null if the download failed.
      */
     protected function storeProfileImageFromUrl(string $url): ?string
     {
@@ -159,11 +184,11 @@ class UserService implements DataTableQueryable
         $contentType = $response->header('Content-Type', '');
         $extension = $this->getExtensionFromContentType($contentType) ?? $this->getExtensionFromUrl($url) ?? 'jpg';
         $filename = Str::random(40).'.'.$extension;
-        $path = 'profile-images/'.$filename;
+        $path = User::PROFILE_IMAGE_PATH.'/'.$filename;
 
         $stored = Storage::disk('public')->put($path, $response->body());
 
-        return $stored ? $path : null;
+        return $stored ? $filename : null;
     }
 
     /**
@@ -249,6 +274,8 @@ class UserService implements DataTableQueryable
         if ($user === null) {
             return false;
         }
+
+        $this->deleteProfileImageFile($user->profile_image);
 
         return $this->userRepository->delete($user);
     }

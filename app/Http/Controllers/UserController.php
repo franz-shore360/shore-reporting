@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\DataTable\Definitions\UserDataTableDefinition;
-use App\Http\Requests\BulkUpdateUsersDepartmentRequest;
 use App\Http\Requests\BulkDestroyUsersRequest;
+use App\Http\Requests\BulkUpdateUsersDepartmentRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Services\DataTableExportService;
@@ -12,7 +12,6 @@ use App\Services\DataTableService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
@@ -108,7 +107,7 @@ class UserController extends Controller
         if (! empty($data['remove_profile_image'])) {
             $user = $this->userService->getUserById($id);
             if ($user && $user->profile_image) {
-                Storage::disk('public')->delete($user->profile_image);
+                $this->userService->deleteProfileImageFile($user->profile_image);
             }
             $data['profile_image'] = null;
             unset($data['remove_profile_image']);
@@ -117,9 +116,12 @@ class UserController extends Controller
         if ($request->hasFile('profile_image')) {
             $user = $this->userService->getUserById($id);
             if ($user && $user->profile_image) {
-                Storage::disk('public')->delete($user->profile_image);
+                $this->userService->deleteProfileImageFile($user->profile_image);
             }
-            $data['profile_image'] = $request->file('profile_image')->store('profile-images', 'public');
+            $stored = $this->userService->storeProfileImageFromUploadedFile($request->file('profile_image'));
+            if ($stored !== null) {
+                $data['profile_image'] = $stored;
+            }
         }
 
         $user = $this->userService->updateUser($id, $data);
